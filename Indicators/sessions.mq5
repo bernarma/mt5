@@ -10,6 +10,7 @@
 
 #property indicator_plots   0
 
+#include <Generic\ArrayList.mqh>
 #include <Generic\Queue.mqh>
 
 #include "CisNewBar.mqh"
@@ -20,20 +21,23 @@ input int  InpMaxHistoricalSessionsToShow     = 10;        // Max Historical Ses
 
 input double InpSessionTimeZones = 8.00; // Timezone
 
-input bool InpShowAsiaSession = true; // Asia Session
-input color InpAsiaSessionColor = clrBlueViolet; // Asia Session Color
-input double InpAsiaSessionStart = 07.00; // Asia Session Time (Start)
-input double InpAsiaSessionEnd = 16.00; // Asia Session Time (End)
+input bool InpShowSession1 = true; // Show Session 1
+input string InpSession1Name = "Asia"; // Session 1 Name
+input color InpSession1Color = clrBlueViolet; // Session 1 Color
+input double InpSession1Start = 07.00; // Session 1 Time (Start)
+input double InpSession1End = 16.00; // Session 1 Time (End)
 
-input bool InpShowLondonSession = true; // Show London Session
-input color InpLondonSessionColor = clrGold; // London Session Color
-input double InpLondonSessionStart = 15.00; // London Session Time (Start)
-input double InpLondonSessionEnd = 00.00; // London Session Time (End)
+input bool InpShowSession2 = true; // Show Session 2
+input string InpSession2Name = "London"; // Session 1 Name
+input color InpSession2Color = clrGold; // Session 2 Color
+input double InpSession2Start = 15.00; // Session 2 Time (Start)
+input double InpSession2End = 00.00; // Session 2 Time (End)
 
-input bool InpShowNewYorkSession = true; // Show New York  Session
-input color InpNewYorkSessionColor = clrLimeGreen; // New York Session Color
-input double InpNewYorkSessionStart = 20.00; // New York Session Time (Start)
-input double InpNewYorkSessionEnd = 05.00; // New York Session Time (End)
+input bool InpShowSession3 = true; // Show Session 3
+input string InpSession3Name = "New York"; // Session 1 Name
+input color InpSession3Color = clrLimeGreen; // Session 3 Color
+input double InpSession3Start = 20.00; // Session 3 Time (Start)
+input double InpSession3End = 05.00; // Session 3 Time (End)
 
 bool g_IsInitialised = false;
 
@@ -67,6 +71,8 @@ class CSessionRange {
          // Update the drawing - top left and bottom right
          RectanglePointChange(0, GetDrawingName(), 0, _start, _low);
          RectanglePointChange(0, GetDrawingName(), 1, _end, _high);
+         
+         // TODO: draw the name of the session
       }
       
       string ToString()
@@ -221,7 +227,7 @@ class CSession {
             _end = _end + (int)(_endHour * 60 * 60);
          }
 
-         // Weekends - 
+         // skip weekends
          while (dtCurrent > _end)
          {
             NextSession();
@@ -231,15 +237,22 @@ class CSession {
       }
 };
 
-CSession *g_AsiaSession;
-CSession *g_LondonSession;
-CSession *g_NewYorkSession;
+CArrayList<CSession *> *g_Sessions;
 
 void OnDeinit(const int reason)
 {
-   if (g_AsiaSession) delete g_AsiaSession;
-   if (g_LondonSession) delete g_LondonSession;
-   if (g_NewYorkSession) delete g_NewYorkSession;
+   if (g_Sessions != NULL)
+   {
+      CSession *session;
+   
+      for (int i = 0; i < g_Sessions.Count(); i++)
+      {
+         if (g_Sessions.TryGetValue(i, session))
+            delete session;
+      }
+      
+      delete g_Sessions;
+   }
    
    g_IsInitialised = false;
    
@@ -260,14 +273,28 @@ void OnTimer()
          TimeToString(TimeLocal()),
          (int)dt);
          
-      g_AsiaSession = new CSession("Asia", InpAsiaSessionColor);
-      g_AsiaSession.Initialize(InpAsiaSessionStart, InpAsiaSessionEnd, (int)InpSessionTimeZones*60*60, (int)dt);
+      g_Sessions = new CArrayList<CSession *>();
+         
+      if (InpShowSession1)
+      {
+         CSession *session = new CSession(InpSession1Name, InpSession1Color);
+         session.Initialize(InpSession1Start, InpSession1End, (int)InpSessionTimeZones*60*60, (int)dt);
+         g_Sessions.Add(session);
+      }
       
-      g_LondonSession = new CSession("London", InpLondonSessionColor);
-      g_LondonSession.Initialize(InpLondonSessionStart, InpLondonSessionEnd, (int)InpSessionTimeZones*60*60, (int)dt);
+      if (InpShowSession2)
+      {
+         CSession *session = new CSession(InpSession2Name, InpSession2Color);
+         session.Initialize(InpSession2Start, InpSession2End, (int)InpSessionTimeZones*60*60, (int)dt);
+         g_Sessions.Add(session);
+      }      
       
-      g_NewYorkSession = new CSession("New York", InpNewYorkSessionColor);
-      g_NewYorkSession.Initialize(InpNewYorkSessionStart, InpNewYorkSessionEnd, (int)InpSessionTimeZones*60*60, (int)dt);
+      if (InpShowSession3)
+      {
+         CSession *session = new CSession(InpSession3Name, InpSession3Color);
+         session.Initialize(InpSession3Start, InpSession3End, (int)InpSessionTimeZones*60*60, (int)dt);
+         g_Sessions.Add(session);
+      }
    
       g_IsInitialised = true;
       
@@ -301,15 +328,10 @@ int OnCalculate(const int rates_total,
 {
    //PrintFormat("Calculating rates_total=%i, prev_calculated=%i", rates_total, prev_calculated);
    
-   if (rates_total == 0)
+   if (rates_total == 0 || !g_IsInitialised)
       return (prev_calculated);
 
-   if (!g_IsInitialised) return(0);
-   
-   //--- Only calculate historically from InpLookbackBars
-   //int InpLookbackBars = 10000;
-   //int start = MathMax(rates_total - InpLookbackBars, prev_calculated);
-   
+   //--- TODO: need to be smarter as to where we start processing candles from
    int start = prev_calculated;
 
    for(int i = start; i < rates_total && !IsStopped(); i++)
@@ -337,9 +359,13 @@ void ProcessBar(const int current,
                const double &close[],
                bool forming)
 {
-   if (g_AsiaSession != NULL) g_AsiaSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
-   if (g_LondonSession != NULL) g_LondonSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
-   if (g_NewYorkSession != NULL) g_NewYorkSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
+   CSession *session;
+   
+   for (int i = 0; i < g_Sessions.Count(); i++)
+   {
+      if (g_Sessions.TryGetValue(i, session))
+         session.Process(time[current], open[current], high[current], low[current], close[current], !forming);
+   }
 }
 
 //+------------------------------------------------------------------+
