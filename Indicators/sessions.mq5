@@ -22,19 +22,22 @@ input int  InpMaxHistoricalSessionsToShow     = 10;        // Max Historical Ses
 input double InpSessionTimeZones = 8.00; // Timezone
 
 input bool InpShowSession1 = true; // Show Session 1
+input bool InpShowNextSession1 = true; // Show Session 1
 input string InpSession1Name = "Asia"; // Session 1 Name
 input color InpSession1Color = clrBlueViolet; // Session 1 Color
 input double InpSession1Start = 07.00; // Session 1 Time (Start)
 input double InpSession1End = 16.00; // Session 1 Time (End)
 
 input bool InpShowSession2 = true; // Show Session 2
-input string InpSession2Name = "London"; // Session 1 Name
+input bool InpShowNextSession2 = true; // Show Session 2
+input string InpSession2Name = "London"; // Session 2 Name
 input color InpSession2Color = clrGold; // Session 2 Color
 input double InpSession2Start = 15.00; // Session 2 Time (Start)
 input double InpSession2End = 00.00; // Session 2 Time (End)
 
 input bool InpShowSession3 = true; // Show Session 3
-input string InpSession3Name = "New York"; // Session 1 Name
+input bool InpShowNextSession3 = true; // Show Session 3
+input string InpSession3Name = "New York"; // Session 3 Name
 input color InpSession3Color = clrLimeGreen; // Session 3 Color
 input double InpSession3Start = 20.00; // Session 3 Time (Start)
 input double InpSession3End = 05.00; // Session 3 Time (End)
@@ -127,7 +130,7 @@ class CSession {
       
       void Initialize(double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
       {
-         int adjustment = (sessionSecondsOffsetTz + serverSecondsOffsetTz);
+         int adjustment = (sessionSecondsOffsetTz - serverSecondsOffsetTz);
          if (adjustment > 0) adjustment = (int)(adjustment / 60.0 / 60.0);
       
          _startHour = startHour - adjustment;
@@ -135,7 +138,9 @@ class CSession {
          
          if (_endHour < 0) _endHour = _endHour + 24;
          
-         //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f", startHour, endHour, _startHour, _endHour);
+         //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f, Adjustments [%i, %i]",
+         //   startHour, endHour, _startHour, _endHour,
+         //   sessionSecondsOffsetTz, serverSecondsOffsetTz);
          
          _start = NULL;
       }
@@ -190,7 +195,7 @@ class CSession {
       {
          if (_start == NULL) return false;
          
-         int inc = 24*60*60;
+         const int inc = 24*60*60;
          _start = _start + inc;
          _end = _end + inc;
          
@@ -225,6 +230,9 @@ class CSession {
 
             _end = StructToTime(sToday);
             _end = _end + (int)(_endHour * 60 * 60);
+            
+            //PrintFormat("Session [%s] Created [%s - %s] Adjusted Start/End [%f - %f]",
+            //   _name, TimeToString(_start), TimeToString(_end), _startHour, _endHour);
          }
 
          // skip weekends
@@ -336,8 +344,12 @@ int OnCalculate(const int rates_total,
 
    for(int i = start; i < rates_total && !IsStopped(); i++)
    {
+      //PrintFormat("Processing [%i/%i] - %s", i, rates_total - 1, TimeToString(time[i]));
       ProcessBar(i, time, open, high, low, close, i == rates_total-1);
    }
+   
+   // Process the active one (this will affect the high/low and start/end
+   ProcessBar(rates_total-1, time, open, high, low, close, true);
 
    // Number of seconds in current chart period
    int period_seconds = PeriodSeconds(_Period);
