@@ -35,6 +35,8 @@ input color InpNewYorkSessionColor = clrLimeGreen; // New York Session Color
 input double InpNewYorkSessionStart = 20.00; // New York Session Time (Start)
 input double InpNewYorkSessionEnd = 05.00; // New York Session Time (End)
 
+bool g_IsInitialised = false;
+
 class CSessionRange {
    public:
       CSessionRange(string name, datetime start, double high, double low, color clr)
@@ -69,11 +71,11 @@ class CSessionRange {
       
       string ToString()
       {
-         return StringFormat("%s Session Complete, Range=[%s - %s] Low=%f, High=%f",
+         return StringFormat("Session [%s], Range=[%s-%s] HL[%f,%f]",
                _name,
                TimeToString(_start),
                TimeToString(_end),
-               _low, _high);
+               _high, _low);
       }
       
    private:
@@ -105,19 +107,29 @@ class CSession {
       
       ~CSession()
       {
-         CSessionRange *range;
-         while ((range = _sessions.Dequeue()) != NULL)
+         for (int i = _sessions.Count(); i > 0; i--)
          {
+            CSessionRange *range = _sessions.Dequeue();
             delete range;
          }
+         
+         if (_currentSession != NULL)
+            delete _currentSession;
+         
+         delete _sessions;
       }
       
-      void Initialize(double startHour, double endHour, double sessionTz, double serverTz)
+      void Initialize(double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
       {
-         _startHour = startHour - sessionTz - serverTz;
-         _endHour = endHour - sessionTz - serverTz;
+         int adjustment = (sessionSecondsOffsetTz + serverSecondsOffsetTz);
+         if (adjustment > 0) adjustment = (int)(adjustment / 60.0 / 60.0);
+      
+         _startHour = startHour - adjustment;
+         _endHour = endHour - adjustment;
          
          if (_endHour < 0) _endHour = _endHour + 24;
+         
+         //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f", startHour, endHour, _startHour, _endHour);
          
          _start = NULL;
       }
@@ -129,7 +141,7 @@ class CSession {
          bool inSession = IsInSession(dtCurrent);
          
          //  If current session doesn't exist and we just detected a session start
-         //  - Set current session to "NEW SESSION"
+         //  - Set current session to "NEW SESSION"   
          if (_currentSession == NULL && inSession)
          {
             _currentSession = new CSessionRange(_name, dtCurrent, high, low, _clr);
@@ -140,9 +152,6 @@ class CSession {
             // - add to historical sessions
             _sessions.Enqueue(_currentSession);
             _currentSession = NULL;
-            
-            //NextSession();
-            PrintFormat("Incrementing to Next Session %s - %s", TimeToString(_start), TimeToString(_end));
             
             if (_sessions.Count() > InpMaxHistoricalSessionsToShow)
             {
@@ -194,30 +203,27 @@ class CSession {
             MqlDateTime dtS;
             TimeToStruct(dtCurrent, dtS);
             
-            int hour = (int)MathFloor(_startHour);
-            if (hour < 0)
-            {
-               dtS.hour = hour + 24;
-            }
-            else
-            {
-               dtS.hour = hour;
-            }
+            MqlDateTime sToday;
+            sToday.year = dtS.year;
+            sToday.mon = dtS.mon;
+            sToday.day = dtS.day;
+            sToday.hour = 0;
+            sToday.min = 0;
+            sToday.sec = 0;
             
-            _start = StructToTime(dtS);
+            _start = StructToTime(sToday) + (int)(_startHour * 60 * 60);
             
-            if (hour < 0)
-            {
+            // we roll back a day then add the start time
+            if (_startHour > _endHour)
                _start = _start - (24 * 60 * 60);
-            }
-            
-            _end = _start + (int)(_endHour - _startHour) * 60 * 60;
+
+            _end = StructToTime(sToday);
+            _end = _end + (int)(_endHour * 60 * 60);
          }
 
          // Weekends - 
          while (dtCurrent > _end)
          {
-            PrintFormat("Moving to Next Session - %s in %s-%s", TimeToString(dtCurrent), TimeToString(_start), TimeToString(_end));
             NextSession();
          }
          
@@ -225,38 +231,9 @@ class CSession {
       }
 };
 
-
-
 CSession *g_AsiaSession;
 CSession *g_LondonSession;
 CSession *g_NewYorkSession;
-
-double g_ServerTimeZoneOffset = 0;
-bool g_IsInitialised = false;
-
-void OnTimer()
-{
-   EventKillTimer();
-
-   if (!g_IsInitialised)
-   {
-      PrintFormat("GMT: %f", TimeGMT());
-      
-      // TODO: int daylightSavingsCorrection = TimeDaylightSavings();
-      g_ServerTimeZoneOffset = (double)((int)(TimeTradeServer() - TimeGMT())) / 60 / 60;
-      
-      g_AsiaSession = new CSession("Asia", InpAsiaSessionColor);
-      g_AsiaSession.Initialize(InpAsiaSessionStart, InpAsiaSessionEnd, InpSessionTimeZones, g_ServerTimeZoneOffset);
-      
-      g_LondonSession = new CSession("London", InpLondonSessionColor);
-      g_LondonSession.Initialize(InpLondonSessionStart, InpLondonSessionEnd, InpSessionTimeZones, g_ServerTimeZoneOffset);
-      
-      g_NewYorkSession = new CSession("New York", InpNewYorkSessionColor);
-      g_NewYorkSession.Initialize(InpNewYorkSessionStart, InpNewYorkSessionEnd, InpSessionTimeZones, g_ServerTimeZoneOffset);
-
-      g_IsInitialised = true;
-   }
-}
 
 void OnDeinit(const int reason)
 {
@@ -265,6 +242,37 @@ void OnDeinit(const int reason)
    if (g_NewYorkSession) delete g_NewYorkSession;
    
    g_IsInitialised = false;
+   
+   PrintFormat("[Sessions] Deactivated");
+}
+
+void OnTimer()
+{
+   if (!g_IsInitialised)
+   {
+      datetime dt = TimeTradeServer() - TimeGMT();
+      
+      PrintFormat("Server Initialised with Date/Time %s, Calculated using TimeTradeServer=%s\nTimeGMT=%s, TimeGMTOffset=%i, TimeLocal=%s, %i",
+         TimeToString(dt),
+         TimeToString(TimeTradeServer()),
+         TimeToString(TimeGMT()),
+         TimeGMTOffset(),
+         TimeToString(TimeLocal()),
+         (int)dt);
+         
+      g_AsiaSession = new CSession("Asia", InpAsiaSessionColor);
+      g_AsiaSession.Initialize(InpAsiaSessionStart, InpAsiaSessionEnd, (int)InpSessionTimeZones*60*60, (int)dt);
+      
+      g_LondonSession = new CSession("London", InpLondonSessionColor);
+      g_LondonSession.Initialize(InpLondonSessionStart, InpLondonSessionEnd, (int)InpSessionTimeZones*60*60, (int)dt);
+      
+      g_NewYorkSession = new CSession("New York", InpNewYorkSessionColor);
+      g_NewYorkSession.Initialize(InpNewYorkSessionStart, InpNewYorkSessionEnd, (int)InpSessionTimeZones*60*60, (int)dt);
+   
+      g_IsInitialised = true;
+      
+      PrintFormat("[Sessions] Initialised");
+   }
 }
 
 //+------------------------------------------------------------------+
@@ -272,8 +280,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   //--- Delay a second to give MT5 a chance to startup before attempting to query the server
-   //--- for timezone information and other bits that can cause failures during startup of the platform
    EventSetTimer(1);
 
    return(INIT_SUCCEEDED);
@@ -293,11 +299,13 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
 {
+   //PrintFormat("Calculating rates_total=%i, prev_calculated=%i", rates_total, prev_calculated);
+   
    if (rates_total == 0)
-      return (rates_total);
-      
-   if (!g_IsInitialised) return(0);
+      return (prev_calculated);
 
+   if (!g_IsInitialised) return(0);
+   
    //--- Only calculate historically from InpLookbackBars
    //int InpLookbackBars = 10000;
    //int start = MathMax(rates_total - InpLookbackBars, prev_calculated);
@@ -309,10 +317,15 @@ int OnCalculate(const int rates_total,
       ProcessBar(i, time, open, high, low, close, i == rates_total-1);
    }
 
-   int period_seconds=PeriodSeconds(_Period);                     // Number of seconds in current chart period
-   datetime new_time=TimeCurrent()/period_seconds*period_seconds; // Time of bar opening on current chart
-   if(current_chart.isNewBar(new_time)) OnNewBar(rates_total, time, open, high, low, close); // When new bar appears - launch the NewBar event handler
+   // Number of seconds in current chart period
+   int period_seconds = PeriodSeconds(_Period);
    
+   // Time of bar opening on current chart
+   datetime new_time = TimeCurrent() / period_seconds * period_seconds;
+   
+   // When new bar appears - launch the NewBar event handler
+   if (current_chart.isNewBar(new_time)) OnNewBar(rates_total, time, open, high, low, close);
+
    return(rates_total);
 }
 
@@ -324,9 +337,9 @@ void ProcessBar(const int current,
                const double &close[],
                bool forming)
 {
-   g_AsiaSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
-   g_LondonSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
-   g_NewYorkSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
+   if (g_AsiaSession != NULL) g_AsiaSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
+   if (g_LondonSession != NULL) g_LondonSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
+   if (g_NewYorkSession != NULL) g_NewYorkSession.Process(time[current], open[current], high[current], low[current], close[current], !forming);
 }
 
 //+------------------------------------------------------------------+
