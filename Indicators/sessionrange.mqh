@@ -77,13 +77,10 @@ CSessionRange::CSessionRange(string name, datetime start, double high, double lo
       _start, _low, _end, _high, _clr, STYLE_DOT, 1, false, true, false);
 }
       
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
 CSessionRange::~CSessionRange()
-  {
+{
   RectangleDelete(0, GetDrawingName());
-  }
+}
   
 void CSessionRange::Update(datetime dt, double high, double low)
 {
@@ -142,7 +139,7 @@ bool CSessionRange::RectangleCreate(const long            chart_ID=0,
    ObjectSetInteger(chart_ID,name,OBJPROP_ZORDER,z_order);
    return(true);
 }
-  
+
 bool CSessionRange::RectanglePointChange(const long   chart_ID=0,       // chart's ID
                           const string name="Rectangle", // rectangle name
                           const int    point_index=0,    // anchor point index

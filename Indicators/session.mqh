@@ -24,7 +24,6 @@ private:
    CQueue<CSessionRange *> *_sessions;
    CSessionRange *_currentSession;
    
-   bool IsInSession(datetime dtCurrent);
    bool MoveNextSession(datetime dtCurrent);
       
 public:
@@ -34,7 +33,9 @@ public:
    
    void Initialize(double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
    
-   bool Process(datetime dtCurrent, double open, double high, double low, double close);
+   bool IsInSession(datetime dtCurrent);
+   
+   void Process(datetime dtCurrent, double open, double high, double low, double close, bool &inSession);
 };
 
 CSession::CSession(string name, color clr, int maxHistoricalSessions)
@@ -70,18 +71,18 @@ void CSession::Initialize(double startHour, double endHour, int sessionSecondsOf
    
    if (_endHour < 0) _endHour = _endHour + 24;
    
-   PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f, Adjustments [%i, %i]",
-      startHour, endHour, _startHour, _endHour,
-      sessionSecondsOffsetTz, serverSecondsOffsetTz);
+   //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f, Adjustments [%i, %i]",
+   //   startHour, endHour, _startHour, _endHour,
+   //   sessionSecondsOffsetTz, serverSecondsOffsetTz);
    
    _start = NULL;
 }
 
 //--- Must be called in sequential order
-bool CSession::Process(datetime dtCurrent, double open, double high, double low, double close)
+void CSession::Process(datetime dtCurrent, double open, double high, double low, double close, bool &inSession)
 {
    // Ignore any time that isn't in current session
-   bool inSession = IsInSession(dtCurrent);
+   inSession = IsInSession(dtCurrent);
    
    //  If current session doesn't exist and we just detected a session start
    //  - Set current session to "NEW SESSION"   
@@ -108,8 +109,6 @@ bool CSession::Process(datetime dtCurrent, double open, double high, double low,
       // Set high and low values of current session based on current bar
       _currentSession.Update(dtCurrent, high, low);
    }
-   
-   return inSession;
 }
 
 bool CSession::MoveNextSession(datetime dtCurrent)
@@ -155,8 +154,8 @@ bool CSession::IsInSession(datetime dtCurrent)
       _end = StructToTime(sToday);
       _end = _end + (int)(_endHour * 60 * 60);
       
-      PrintFormat("Session [%s] Created [%s - %s] Adjusted Start/End [%f - %f]",
-         _name, TimeToString(_start), TimeToString(_end), _startHour, _endHour);
+      //PrintFormat("Session [%s] Created [%s - %s] Adjusted Start/End [%f - %f]",
+      //   _name, TimeToString(_start), TimeToString(_end), _startHour, _endHour);
    }
 
    // skip weekends

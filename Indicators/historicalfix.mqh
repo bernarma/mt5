@@ -10,6 +10,8 @@
 class CHistoricalFix
   {
 private:
+      int _offset;
+   
       string _name;
       datetime _date;
       double _price;
@@ -45,6 +47,7 @@ public:
                     
                     string GetName();
                     void Initialize();
+                    void Update(datetime current);
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -56,6 +59,7 @@ CHistoricalFix::CHistoricalFix(string name, datetime date, double price, color c
          _price = price;
          _clr = clr;
          _style = style;
+         _offset = 600;
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -71,10 +75,15 @@ string CHistoricalFix::GetName()
          return StringFormat("HISTORICAL_FIX [%s %s]", _name, TimeToString(_date));
       }
 
+void CHistoricalFix::Update(datetime current)
+{
+   ObjectMove(0, GetName(), 1, current + _offset, _price);
+}
+
 void CHistoricalFix::Initialize()
       {
          // TODO: expose so it can be customised
-         TrendCreate(0, GetName(), 0, _date, _price, _date+600, _price, clrCoral, STYLE_DOT, 1, true, false, true, true);
+         TrendCreate(0, GetName(), 0, _date, _price, _date+_offset, _price, clrCoral, STYLE_DOT, 1, true, false, false, false);
       }
 
 //+------------------------------------------------------------------+

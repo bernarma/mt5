@@ -22,7 +22,8 @@ public:
    ~CSessions();
    
    void CreateSession(string name, color clr, int maxHistoricalSessions, double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
-   bool IsInSession(datetime time, double open, double high, double low, double close);
+   bool IsInSession(datetime time);
+   void ProcessTime(datetime time, double open, double high, double low, double close, bool &inSession);
 };
 
 CSessions::CSessions()
@@ -50,16 +51,33 @@ void CSessions::CreateSession(string name, color clr, int maxHistoricalSessions,
    _sessions.Add(session);
 }
 
-bool CSessions::IsInSession(datetime time, double open, double high, double low, double close)
+bool CSessions::IsInSession(datetime time)
 {
-   bool isInSession = false;
    CSession *session;
    
    for (int i = 0; i < _sessions.Count(); i++)
    {
       if (_sessions.TryGetValue(i, session))
-         isInSession = isInSession | session.Process(time, open, high, low, close);
+      {
+         if (session.IsInSession(time)) return true;
+      }
    }
    
-   return isInSession;
+   return false;
+}
+
+void CSessions::ProcessTime(datetime time, double open, double high, double low, double close, bool &inAnySession)
+{
+   inAnySession = false;
+   CSession *session;
+   
+   for (int i = 0; i < _sessions.Count(); i++)
+   {
+      if (_sessions.TryGetValue(i, session))
+      {
+         bool inSession;
+         session.Process(time, open, high, low, close, inSession);
+         inAnySession |= inSession;
+      }
+   }
 }
