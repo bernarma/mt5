@@ -58,8 +58,6 @@ CFix::CFix(string name, int maxHistoricalFixesToShow, color clr, ENUM_LINE_STYLE
 
 CFix::~CFix()
 {
-   Print("~CFix");
-   
    for (int i = _historicalFixes.Count(); i > 0; i--)
    {
       CLinkedListNode<CHistoricalFix *> *historicalFixNode = _historicalFixes.First();
