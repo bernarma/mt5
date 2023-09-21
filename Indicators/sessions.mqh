@@ -11,46 +11,42 @@
 #include <Generic\ArrayList.mqh>
 
 class CSessions
-  {
+{
+
 private:
 
    CArrayList<CSession *> *_sessions;
 
 public:
-                     CSessions();
-                    ~CSessions();
-                    
-                    void CreateSession(string name, color clr, int maxHistoricalSessions, double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
-                    bool IsInSession(datetime time, double open, double high, double low, double close);
-  };
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-CSessions::CSessions()
-  {
-      _sessions = new CArrayList<CSession *>();
-  }
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-CSessions::~CSessions()
-  {
-      CSession *session;
+   CSessions();
+   ~CSessions();
    
-      for (int i = 0; i < _sessions.Count(); i++)
-      {
-         if (_sessions.TryGetValue(i, session))
-            delete session;
-      }
-      
-      delete _sessions;
-  }
-//+------------------------------------------------------------------+
+   void CreateSession(string name, color clr, int maxHistoricalSessions, double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
+   bool IsInSession(datetime time, double open, double high, double low, double close);
+};
+
+CSessions::CSessions()
+{
+   _sessions = new CArrayList<CSession *>();
+}
+
+CSessions::~CSessions()
+{
+   CSession *session;
+   
+   for (int i = 0; i < _sessions.Count(); i++)
+   {
+      if (_sessions.TryGetValue(i, session))
+         delete session;
+   }
+   
+   delete _sessions;
+}
 
 void CSessions::CreateSession(string name, color clr, int maxHistoricalSessions, double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
 {
-         CSession *session = new CSession(name, clr, maxHistoricalSessions);
-         session.Initialize(startHour, endHour, sessionSecondsOffsetTz, serverSecondsOffsetTz);
+   CSession *session = new CSession(name, clr, maxHistoricalSessions);
+   session.Initialize(startHour, endHour, sessionSecondsOffsetTz, serverSecondsOffsetTz);
    _sessions.Add(session);
 }
 
@@ -62,7 +58,7 @@ bool CSessions::IsInSession(datetime time, double open, double high, double low,
    for (int i = 0; i < _sessions.Count(); i++)
    {
       if (_sessions.TryGetValue(i, session))
-         isInSession = isInSession || session.Process(time, open, high, low, close);
+         isInSession = isInSession | session.Process(time, open, high, low, close);
    }
    
    return isInSession;
