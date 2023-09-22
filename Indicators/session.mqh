@@ -16,8 +16,8 @@ class CSession
 private:
    string _name;
    color  _clr;
-   double _startHour;
-   double _endHour;
+   int _startHourInSeconds;
+   int _endHourInSeconds;
    int _maxHistoricalSessions;
    datetime _start, _end;
    
@@ -25,6 +25,7 @@ private:
    CSessionRange *_currentSession;
    
    bool MoveNextSession(datetime dtCurrent);
+   int GetMinutesFromTime(double time);
       
 public:
    CSession(string name, color clr, int maxHistoricalSessions);
@@ -61,19 +62,27 @@ CSession::~CSession()
    delete _sessions;
 }
 
+int CSession::GetMinutesFromTime(double time)
+{
+   return (int)((time - (int)time) * 100);
+}
+
 void CSession::Initialize(double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
 {
    int adjustment = (sessionSecondsOffsetTz - serverSecondsOffsetTz);
-   if (adjustment > 0) adjustment = (int)(adjustment / 60.0 / 60.0);
    
-   _startHour = startHour - adjustment;
-   _endHour = endHour - adjustment;
+   // Convert start to hours and minutes (it is not truly a fractional but a representation of the minutes)
+   _startHourInSeconds = ((int)startHour * 60 * 60) + GetMinutesFromTime(startHour) * 60;
+   _startHourInSeconds -= adjustment;
    
-   if (_endHour < 0) _endHour = _endHour + 24;
+   _endHourInSeconds = ((int)endHour * 60 * 60) + GetMinutesFromTime(endHour) * 60;
+   _endHourInSeconds -= adjustment;
    
-   //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f, Adjustments [%i, %i]",
-   //   startHour, endHour, _startHour, _endHour,
-   //   sessionSecondsOffsetTz, serverSecondsOffsetTz);
+   if (_endHourInSeconds < 0) _endHourInSeconds = _endHourInSeconds + (24*60*60);
+   
+   //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f, Offsets [Sess=%i, Server=%i], Resulting Adjustment [%i]",
+      //startHour, endHour, _startHourInSeconds, _endHourInSeconds,
+      //sessionSecondsOffsetTz, serverSecondsOffsetTz, adjustment);
    
    _start = NULL;
 }
@@ -145,17 +154,17 @@ bool CSession::IsInSession(datetime dtCurrent)
       sToday.min = 0;
       sToday.sec = 0;
       
-      _start = StructToTime(sToday) + (int)(_startHour * 60 * 60);
+      _start = StructToTime(sToday) + _startHourInSeconds;
       
       // we roll back a day then add the start time
-      if (_startHour > _endHour)
+      if (_startHourInSeconds > _endHourInSeconds)
          _start = _start - (24 * 60 * 60);
 
       _end = StructToTime(sToday);
-      _end = _end + (int)(_endHour * 60 * 60);
+      _end = _end + _endHourInSeconds;
       
       //PrintFormat("Session [%s] Created [%s - %s] Adjusted Start/End [%f - %f]",
-      //   _name, TimeToString(_start), TimeToString(_end), _startHour, _endHour);
+         //_name, TimeToString(_start), TimeToString(_end), _startHourInSeconds, _endHourInSeconds);
    }
 
    // skip weekends
