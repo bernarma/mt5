@@ -15,11 +15,12 @@ class CFixes
 
 private:
    int _maxFixes;
+   int _offset;
    
    CArrayList<CFix *> *_fixes;
       
 public:
-   CFixes(int maxHistoricalFixesToShow);
+   CFixes(int maxHistoricalFixesToShow, int offset);
    ~CFixes();
    
    void CreateFix(string name, double time, int tz, int serverOffset, color clr, ENUM_LINE_STYLE style);
@@ -27,9 +28,10 @@ public:
    
 };
 
-CFixes::CFixes(int maxHistoricalFixesToShow)
+CFixes::CFixes(int maxHistoricalFixesToShow, int offset)
 {
    _maxFixes = maxHistoricalFixesToShow;
+   _offset = offset;
          
    _fixes = new CArrayList<CFix *>();
 }
@@ -49,13 +51,15 @@ CFixes::~CFixes()
 
 void CFixes::CreateFix(string name, double time, int tz, int serverOffset, color clr, ENUM_LINE_STYLE style)
 {
-   CFix *fix = new CFix(name, _maxFixes, clr, style);
+   CFix *fix = new CFix(name, _maxFixes, _offset, clr, style);
    fix.Initialize(time, tz, serverOffset);
    _fixes.Add(fix);
 }
 
 void CFixes::Handle(datetime time, double open)
 {
+   //PrintFormat("CFixes->Handle Period - Time [%s]", TimeToString(time));
+   
    CFix *fix;
    for (int i = 0; i < _fixes.Count(); i++)
    {

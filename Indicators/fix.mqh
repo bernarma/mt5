@@ -18,6 +18,8 @@ private:
    
    int _secondsFromMidnight;
    
+   int _offset;
+   
    int _maxHistoricalFixesToShow;
    
    bool _initialised;
@@ -33,7 +35,7 @@ private:
    int GetMinutesFromTime(double time);
       
 public:
-   CFix(string name, int maxHistoricalFixesToShow, color clr, ENUM_LINE_STYLE style);
+   CFix(string name, int maxHistoricalFixesToShow, int offset, color clr, ENUM_LINE_STYLE style);
    ~CFix();
    
    void Handle(datetime time, double price);
@@ -44,12 +46,13 @@ public:
 
 };
 
-CFix::CFix(string name, int maxHistoricalFixesToShow, color clr, ENUM_LINE_STYLE style)
+CFix::CFix(string name, int maxHistoricalFixesToShow, int offset, color clr, ENUM_LINE_STYLE style)
 {
    _name = name;
    _initialised = false;
    _clr = clr;
    _style = style;
+   _offset = offset;
    
    _maxHistoricalFixesToShow = maxHistoricalFixesToShow;
    
@@ -117,30 +120,32 @@ void CFix::Handle(datetime time, double price)
    if (IsInRange(time))
    {
       // Add Fix
-      CHistoricalFix *historicalFix = new CHistoricalFix(_name, time, price, _clr, _style);
+      CHistoricalFix *historicalFix = new CHistoricalFix(_name, time, price, _offset, _clr, _style);
       historicalFix.Initialize();
       _historicalFixes.Add(historicalFix);
       
       if (_historicalFixes.Count() > _maxHistoricalFixesToShow)
       {
          CLinkedListNode<CHistoricalFix *> *historicalFixNode = _historicalFixes.First();
+         //PrintFormat("Removing Historical Fix %s", historicalFixNode.Value().GetName());
          delete historicalFixNode.Value();
          _historicalFixes.Remove(historicalFixNode);
       }
    }
    else
    {
-      // TODO: update the offset of the fix
+      //PrintFormat("Updating Fix %s [%i] Historical Fixes with Time %s", _name, _historicalFixes.Count(), TimeToString(time));
+   
       CLinkedListNode<CHistoricalFix *> *node = _historicalFixes.Head();
+      int count = 0;
       if (node != NULL)
       {
          do
          {
-            //PrintFormat("Iterating over Historical Fix LL %s %i", node.Value().GetName(), failsafe);
+            //PrintFormat("Updating Historical Fix LL %s", node.Value().GetName());
             node.Value().Update(time);
             node = node.Next();
-         } while (node != _historicalFixes.Last());
+         } while (node != _historicalFixes.Head() && count++ < 10);
       }
    }
-   
 }
