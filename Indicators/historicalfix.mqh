@@ -79,5 +79,5 @@ void CHistoricalFix::Initialize()
    CDrawingHelpers::TrendCreate(0, LineName(), 0, _date, _price, _date+_offset, _price, _clr, _style, 1, true, false, false, false);
    
    // Create text
-   CDrawingHelpers::TextCreate(0, TextName(), 0, _date+_offset, _price, _name, "Arial", 6, _clr, 0, ANCHOR_LEFT, false, false, true);
+   CDrawingHelpers::TextCreate(0, TextName(), 0, _date+_offset, _price, StringFormat("%s Fix", _name), "Arial", 6, _clr, 0, ANCHOR_LEFT, false, false, true);
 }

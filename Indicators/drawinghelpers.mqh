@@ -9,12 +9,12 @@
 
 class CDrawingHelpers
 {
-private:
 
-public:
+private:
    CDrawingHelpers();
    ~CDrawingHelpers();
-   
+
+public:
    static bool TrendCreate(const long      chart_ID=0,
               const string          name="TrendLine",
               const int             sub_window=0,
@@ -96,7 +96,27 @@ public:
                         
    static void ChangeRectangleEmptyPoints(datetime &time1,double &price1,
                                    datetime &time2,double &price2);
-                                   
+
+   static bool VLineCreate(const long            chart_ID=0,
+                    const string          name="VLine",
+                    const int             sub_window=0,
+                    datetime              time=0,
+                    const color           clr=clrRed,
+                    const ENUM_LINE_STYLE style=STYLE_SOLID,
+                    const int             width=1,
+                    const bool            back=false,
+                    const bool            selection=true,
+                    const bool            ray=true,
+                    const bool            hidden=true,
+                    const long            z_order=0);
+   
+   static bool VLineMove(const long   chart_ID=0,
+                  const string name="VLine",
+                  datetime     time=0);
+                  
+   static bool VLineDelete(const long   chart_ID=0,
+                    const string name="VLine");
+
 };
 
 CDrawingHelpers::CDrawingHelpers()
@@ -385,4 +405,76 @@ void CDrawingHelpers::ChangeRectangleEmptyPoints(datetime &time1,double &price1,
    
    if(!price2)
       price2=price1-300*SymbolInfoDouble(Symbol(),SYMBOL_POINT);
+}
+
+
+bool CDrawingHelpers::VLineCreate(const long            chart_ID=0,
+                 const string          name="VLine",
+                 const int             sub_window=0,
+                 datetime              time=0,
+                 const color           clr=clrRed,
+                 const ENUM_LINE_STYLE style=STYLE_SOLID,
+                 const int             width=1,
+                 const bool            back=false,
+                 const bool            selection=true,
+                 const bool            ray=true,
+                 const bool            hidden=true,
+                 const long            z_order=0)
+{
+   if (!time)
+      time = TimeCurrent();
+   
+   ResetLastError();
+   
+   if(!ObjectCreate(chart_ID,name,OBJ_VLINE,sub_window,time,0))
+   {
+      Print(__FUNCTION__,
+            ": failed to create a vertical line! Error code = ",GetLastError());
+      return(false);
+   }
+   
+   ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
+   ObjectSetInteger(chart_ID,name,OBJPROP_STYLE,style);
+   ObjectSetInteger(chart_ID,name,OBJPROP_WIDTH,width);
+   ObjectSetInteger(chart_ID,name,OBJPROP_BACK,back);
+   ObjectSetInteger(chart_ID,name,OBJPROP_SELECTABLE,selection);
+   ObjectSetInteger(chart_ID,name,OBJPROP_SELECTED,selection);
+   ObjectSetInteger(chart_ID,name,OBJPROP_RAY,ray);
+   ObjectSetInteger(chart_ID,name,OBJPROP_HIDDEN,hidden);
+   ObjectSetInteger(chart_ID,name,OBJPROP_ZORDER,z_order);
+   return(true);
+}
+
+bool CDrawingHelpers::VLineMove(const long   chart_ID=0,
+               const string name="VLine",
+               datetime     time=0)
+{
+   if(!time)
+      time=TimeCurrent();
+
+   ResetLastError();
+
+   if(!ObjectMove(chart_ID,name,0,time,0))
+   {
+      Print(__FUNCTION__,
+            ": failed to move the vertical line! Error code = ",GetLastError());
+      return(false);
+   }
+
+   return(true);
+}
+
+bool CDrawingHelpers::VLineDelete(const long   chart_ID=0,
+                 const string name="VLine")
+{
+   ResetLastError();
+
+   if(!ObjectDelete(chart_ID,name))
+   {
+      Print(__FUNCTION__,
+            ": failed to delete the vertical line! Error code = ",GetLastError());
+      return(false);
+   }
+   
+   return(true);
 }

@@ -7,6 +7,7 @@
 #property link      "https://www.mtnsconsulting.com"
 #property version   "1.00"
 
+#include "DrawingHelpers.mqh"
 #include "SessionRange.mqh"
 #include <Generic\Queue.mqh>
 
@@ -14,8 +15,10 @@ class CSession
 {
 
 private:
+   string _prefix;
    string _name;
    color  _clr;
+   bool _showNextSession;
    int _startHourInSeconds;
    int _endHourInSeconds;
    int _maxHistoricalSessions;
@@ -26,24 +29,27 @@ private:
    
    bool MoveNextSession(datetime dtCurrent);
    int GetMinutesFromTime(double time);
+   string GetDrawingName(void);
       
 public:
-   CSession(string name, color clr, int maxHistoricalSessions);
+   CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession);
    
    ~CSession();
    
-   void Initialize(double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
+   void Initialize(int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
    
    bool IsInSession(datetime dtCurrent);
    
    void Process(datetime dtCurrent, double open, double high, double low, double close, bool &inSession);
 };
 
-CSession::CSession(string name, color clr, int maxHistoricalSessions)
+CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession)
 {
    _maxHistoricalSessions = maxHistoricalSessions;
+   _prefix = prefix;
    _name = name;
    _clr = clr;
+   _showNextSession = showNextSession;
    
    _sessions = new CQueue<CSessionRange*>();
 }
@@ -56,33 +62,35 @@ CSession::~CSession()
       delete range;
    }
    
+   if (_showNextSession)
+      CDrawingHelpers::VLineDelete(0, GetDrawingName());
+      
    if (_currentSession != NULL)
       delete _currentSession;
    
    delete _sessions;
 }
 
-int CSession::GetMinutesFromTime(double time)
+string CSession::GetDrawingName(void)
 {
-   return (int)((time - (int)time) * 100);
+   return StringFormat("[%s]Sess_%s_NXT", _prefix, _name);
 }
 
-void CSession::Initialize(double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
+void CSession::Initialize(int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
 {
    int adjustment = (sessionSecondsOffsetTz - serverSecondsOffsetTz);
    
    // Convert start to hours and minutes (it is not truly a fractional but a representation of the minutes)
-   _startHourInSeconds = ((int)startHour * 60 * 60) + GetMinutesFromTime(startHour) * 60;
+   _startHourInSeconds = ((int)startHour * 60 * 60) + startMin * 60;
    _startHourInSeconds -= adjustment;
    
-   _endHourInSeconds = ((int)endHour * 60 * 60) + GetMinutesFromTime(endHour) * 60;
+   _endHourInSeconds = ((int)endHour * 60 * 60) + endMin * 60;
    _endHourInSeconds -= adjustment;
    
    if (_endHourInSeconds < 0) _endHourInSeconds = _endHourInSeconds + (24*60*60);
    
-   //PrintFormat("Initializing Session %f-%f, Resulting Server Times From %f to %f, Offsets [Sess=%i, Server=%i], Resulting Adjustment [%i]",
-      //startHour, endHour, _startHourInSeconds, _endHourInSeconds,
-      //sessionSecondsOffsetTz, serverSecondsOffsetTz, adjustment);
+   PrintFormat("Initializing Session %f-%f Resulting Server Times From %f to %f, Offsets [Sess=%i, Server=%i], Resulting Adjustment [%i]",
+      startHour, endHour, _startHourInSeconds, _endHourInSeconds, sessionSecondsOffsetTz, serverSecondsOffsetTz, adjustment);
    
    _start = NULL;
 }
@@ -97,7 +105,13 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
    //  - Set current session to "NEW SESSION"   
    if (_currentSession == NULL && inSession)
    {
-      _currentSession = new CSessionRange(_name, dtCurrent, high, low, _clr);
+      _currentSession = new CSessionRange(_prefix, _name, dtCurrent, high, low, _clr);
+      
+      // move to the next session (if enabled)
+      // TODO: handle weekends
+      if (_showNextSession)
+         CDrawingHelpers::VLineMove(0, GetDrawingName(), _start + 24*60*60);
+
    }
    else if (_currentSession != NULL && !inSession)
    {
@@ -124,6 +138,8 @@ bool CSession::MoveNextSession(datetime dtCurrent)
 {
    if (_start == NULL) return false;
    const int dayIncrement = 24*60*60;
+   
+   // TODO: skip weekends using DayOfWeek()
    
    while (dtCurrent > _end)
    {
@@ -154,6 +170,11 @@ bool CSession::IsInSession(datetime dtCurrent)
       sToday.min = 0;
       sToday.sec = 0;
       
+      // TODO: implement the rules
+      // London Session: clocks go forward 1 hour at 1am on the last Sunday in March, and back 1 hour at 2am on the last Sunday in October
+      // New York Session: (from 2007) daylight saving time begins on the second Sunday of March and ends on the first Sunday of November
+      // New York Session: (before 2007) daylight saving time started on the last Sunday of April and ended on the last Sunday of October
+      
       _start = StructToTime(sToday) + _startHourInSeconds;
       
       // we roll back a day then add the start time
@@ -163,11 +184,14 @@ bool CSession::IsInSession(datetime dtCurrent)
       _end = StructToTime(sToday);
       _end = _end + _endHourInSeconds;
       
-      //PrintFormat("Session [%s] Created [%s - %s] Adjusted Start/End [%f - %f]",
-         //_name, TimeToString(_start), TimeToString(_end), _startHourInSeconds, _endHourInSeconds);
+      // draw the start of the next session - this will be moved during the creation of a session as needed
+      if (_showNextSession)
+         CDrawingHelpers::VLineCreate(0, GetDrawingName(), 0, _start, _clr, STYLE_DOT, 1, true, false, true, true);
+      
+      PrintFormat("Session [%s] Created [%s - %s] Adjusted Start/End [%f - %f]",
+         _name, TimeToString(_start), TimeToString(_end), _startHourInSeconds, _endHourInSeconds);
    }
 
-   // skip weekends
    if (dtCurrent > _end)
    {
       MoveNextSession(dtCurrent);

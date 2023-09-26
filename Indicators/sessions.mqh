@@ -21,8 +21,12 @@ public:
    CSessions();
    ~CSessions();
    
-   void CreateSession(string name, color clr, int maxHistoricalSessions, double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
+   void CreateSession(
+      string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession,
+      int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
+      
    bool IsInSession(datetime time);
+   
    void ProcessTime(datetime time, double open, double high, double low, double close, bool &inSession);
 };
 
@@ -44,10 +48,12 @@ CSessions::~CSessions()
    delete _sessions;
 }
 
-void CSessions::CreateSession(string name, color clr, int maxHistoricalSessions, double startHour, double endHour, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
+void CSessions::CreateSession(
+   string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession, int startHour, int startMin,
+   int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
 {
-   CSession *session = new CSession(name, clr, maxHistoricalSessions);
-   session.Initialize(startHour, endHour, sessionSecondsOffsetTz, serverSecondsOffsetTz);
+   CSession *session = new CSession(prefix, name, clr, maxHistoricalSessions, showNextSession);
+   session.Initialize(startHour, startMin, endHour, endMin, sessionSecondsOffsetTz, serverSecondsOffsetTz);
    _sessions.Add(session);
 }
 

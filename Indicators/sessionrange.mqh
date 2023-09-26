@@ -21,25 +21,33 @@ private:
    double _high;
    double _low;
    
+   string _prefix;
    string _name;
 
-   string GetDrawingName();
+   string GetDrawingNameRange();
+   string GetDrawingNameLabel();
    string ToString();
                      
 public:
-   CSessionRange(string name, datetime start, double high, double low, color clr);
+   CSessionRange(string prefix, string name, datetime start, double high, double low, color clr);
    ~CSessionRange();
    
    void Update(datetime dt, double high, double low);
 };
-  
-string CSessionRange::GetDrawingName(void)
+
+string CSessionRange::GetDrawingNameRange(void)
 {
-   return StringFormat("SESSION[%s-%s]", _name, TimeToString(_start));
+   return StringFormat("[%s]Sess_%s_%s_RNG", _prefix, _name, TimeToString(_start, TIME_DATE));
 }
 
-CSessionRange::CSessionRange(string name, datetime start, double high, double low, color clr)
+string CSessionRange::GetDrawingNameLabel(void)
 {
+   return StringFormat("[%s]Sess_%s_%s_LBL", _prefix, _name, TimeToString(_start, TIME_DATE));
+}
+
+CSessionRange::CSessionRange(string prefix, string name, datetime start, double high, double low, color clr)
+{
+   _prefix = prefix;
    _name = name;
    _start = start;
    _end = start;
@@ -47,13 +55,17 @@ CSessionRange::CSessionRange(string name, datetime start, double high, double lo
    _low = low;
    _clr = clr;
 
-   CDrawingHelpers::RectangleCreate(0, GetDrawingName(), 0,
+   CDrawingHelpers::RectangleCreate(0, GetDrawingNameRange(), 0,
       _start, _low, _end, _high, _clr, STYLE_DOT, 1, false, true, false);
+      
+   CDrawingHelpers::TextCreate(0, GetDrawingNameLabel(), 0, _start, _low, _name,
+      "Arial", 6, _clr, 0.000000, ANCHOR_LEFT_UPPER, false, false, true, 0);
 }
       
 CSessionRange::~CSessionRange()
 {
-  CDrawingHelpers::RectangleDelete(0, GetDrawingName());
+  CDrawingHelpers::RectangleDelete(0, GetDrawingNameRange());
+  CDrawingHelpers::TextDelete(0, GetDrawingNameLabel());
 }
   
 void CSessionRange::Update(datetime dt, double high, double low)
@@ -63,10 +75,11 @@ void CSessionRange::Update(datetime dt, double high, double low)
    _low = MathMin(low, _low);
 
    // Update the drawing - top left and bottom right
-   CDrawingHelpers::RectanglePointChange(0, GetDrawingName(), 0, _start, _low);
-   CDrawingHelpers::RectanglePointChange(0, GetDrawingName(), 1, _end, _high);
+   CDrawingHelpers::RectanglePointChange(0, GetDrawingNameRange(), 0, _start, _low);
+   CDrawingHelpers::RectanglePointChange(0, GetDrawingNameRange(), 1, _end, _high);
    
-   // TODO: draw the name of the session
+   // update the name of the session and location anchored to bottom left - start will always be the same
+   CDrawingHelpers::TextMove(0, GetDrawingNameLabel(), _start, _low);
 }
 
 string CSessionRange::ToString()
