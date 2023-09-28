@@ -99,6 +99,7 @@ public:
 
    static bool VLineCreate(const long            chart_ID=0,
                     const string          name="VLine",
+                    const string          text="VLine",
                     const int             sub_window=0,
                     datetime              time=0,
                     const color           clr=clrRed,
@@ -410,6 +411,7 @@ void CDrawingHelpers::ChangeRectangleEmptyPoints(datetime &time1,double &price1,
 
 bool CDrawingHelpers::VLineCreate(const long            chart_ID=0,
                  const string          name="VLine",
+                 const string          text="VLine",
                  const int             sub_window=0,
                  datetime              time=0,
                  const color           clr=clrRed,
@@ -432,6 +434,8 @@ bool CDrawingHelpers::VLineCreate(const long            chart_ID=0,
             ": failed to create a vertical line! Error code = ",GetLastError());
       return(false);
    }
+   
+   ObjectSetString(chart_ID,name,OBJPROP_TEXT,text);
    
    ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
    ObjectSetInteger(chart_ID,name,OBJPROP_STYLE,style);
