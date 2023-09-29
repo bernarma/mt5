@@ -11,7 +11,6 @@
 //--- Outstanding
 //--- * Support Daylight Savings Timezones (i.e. Tokyo doesn't change, London Changes, New York Changes)
 //--- * Skip Weekends
-//--- * Optimise initial Loop based on Number of Historical Sessions
 
 #property indicator_plots   0
 
@@ -146,36 +145,24 @@ int OnCalculate(const int rates_total,
                 const long &volume[],
                 const int &spread[])
 {
-   //---
-   if (rates_total == 0)
-      return (rates_total);
-
    if (!g_IsInitialised)
    {
       Print("Awaiting initialization...");
       return(0);
    }
 
-   //--- Only calculate historically from InpLookbackBars
-   int start = prev_calculated; //MathMax(rates_total, prev_calculated);
+   int secondsPerPeriod = PeriodSeconds(PERIOD_CURRENT); // 600 in a 5 minute candle
+   const int secondsPerDay = 60 * 60 * 24;
+   int candlesPerDay = secondsPerDay / secondsPerPeriod;
+   
+   //--- Only calculate a max number of historical sessions based on user input
+   int start = MathMax(rates_total - (InpMaxHistoricalSessionsToShow * candlesPerDay) - 1, prev_calculated - 1);
 
    //--- Loop through the periods in the window except the last candle (which is the active one)
    for(int i = start; i < rates_total && !IsStopped(); i++)
    {
-      ProcessBar(i, time, open, high, low, close);
+      ProcessBar(i, rates_total, time, open, high, low, close);
    }
-   
-   // Process the active one (this will affect the high/low and start/end
-   ProcessBar(rates_total - 1, time, open, high, low, close, true);
-   
-   // Number of seconds in current chart period
-   int period_seconds=PeriodSeconds(_Period);
-   
-   // Time of bar opening on current chart
-   datetime new_time = TimeCurrent() / period_seconds * period_seconds;
-   
-   // When new bar appears - launch the NewBar event handler
-   if(current_chart.isNewBar(new_time)) OnNewBar(rates_total, time, open, high, low, close);
 
    //--- return value of prev_calculated for next call
    return(rates_total);
@@ -184,30 +171,14 @@ int OnCalculate(const int rates_total,
 //+------------------------------------------------------------------+
 
 void ProcessBar(const int current,
+               const int prev_calculated,
                const datetime &time[],
                const double &open[],
                const double &high[],
                const double &low[],
-               const double &close[],
-               bool stillForming = false)
+               const double &close[])
 {
    // update the sessions (including highs/lows and bounding box)
    bool inSess;
    g_Sessions.ProcessTime(time[current], open[current], high[current], low[current], close[current], inSess);
-}
-
-
-void OnNewBar(const int rates_total,
-              const datetime &time[],
-              const double &open[],
-              const double &high[],
-              const double &low[],
-              const double &close[])
-{
-   if (rates_total < 2) return;
-
-   // The rates_total will include the currently forming candle
-   // we only want the fully-formed candle therefore go back 1
-   // since 0 index based, take 1 from that which equates to 2
-   ProcessBar(rates_total - 2, time, open, high, low, close);
 }

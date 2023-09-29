@@ -14,6 +14,8 @@ class CFix
 {
 
 private:
+   string _prefix;
+   
    string _name;
    
    int _secondsFromMidnight;
@@ -35,7 +37,7 @@ private:
    int GetMinutesFromTime(double time);
       
 public:
-   CFix(string name, int maxHistoricalFixesToShow, int offset, color clr, ENUM_LINE_STYLE style);
+   CFix(string prefix, string name, int maxHistoricalFixesToShow, int offset, color clr, ENUM_LINE_STYLE style);
    ~CFix();
    
    void Handle(datetime time, double price);
@@ -46,8 +48,9 @@ public:
 
 };
 
-CFix::CFix(string name, int maxHistoricalFixesToShow, int offset, color clr, ENUM_LINE_STYLE style)
+CFix::CFix(string prefix, string name, int maxHistoricalFixesToShow, int offset, color clr, ENUM_LINE_STYLE style)
 {
+   _prefix = prefix;
    _name = name;
    _initialised = false;
    _clr = clr;
@@ -120,7 +123,7 @@ void CFix::Handle(datetime time, double price)
    if (IsInRange(time))
    {
       // Add Fix
-      CHistoricalFix *historicalFix = new CHistoricalFix(_name, time, price, _offset, _clr, _style);
+      CHistoricalFix *historicalFix = new CHistoricalFix(_prefix, _name, time, price, _offset, _clr, _style);
       historicalFix.Initialize();
       _historicalFixes.Add(historicalFix);
       

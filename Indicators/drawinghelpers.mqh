@@ -153,7 +153,7 @@ bool CDrawingHelpers::TrendCreate(const long            chart_ID=0,        // ch
    if(!ObjectCreate(chart_ID,name,OBJ_TREND,sub_window,time1,price1,time2,price2))
      {
       Print(__FUNCTION__,
-            ": failed to create a trend line! Error code = ",GetLastError());
+            ": failed to create a trend line! [%s] Error code = ", name, GetLastError());
       return(false);
      }
    ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
@@ -177,7 +177,7 @@ bool CDrawingHelpers::TrendDelete(const long   chart_ID=0,       // chart's ID
    if(!ObjectDelete(chart_ID,name))
    {
       Print(__FUNCTION__,
-            ": failed to delete a trend line! Error code = ",GetLastError());
+            ": failed to delete a trend line! [%s] Error code = ", name, GetLastError());
       return(false);
    }
 

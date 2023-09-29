@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                        books.mqh |
+//|                                                        Books.mqh |
 //|                                 Copyright 2023, Mark Bernardinis |
 //|                                   https://www.mtnsconsulting.com |
 //+------------------------------------------------------------------+
@@ -9,20 +9,18 @@
 
 #include <Generic\ArrayList.mqh>
 
-#include "book.mqh"
-#include "sessions.mqh"
-
-enum DIR {
-   DIR_BULL = 1,
-   DIR_NONE = 0,
-   DIR_BEAR = -1
-};
+#include "TimeHelpers.mqh"
+#include "Book.mqh"
+#include "Sessions.mqh"
 
 class CBooks
 {
 
 private:
-   bool _isInitialized;
+   string _prefix;
+   int _offset;
+   color _clrBearLevel;
+   color _clrBullLevel;
 
    //-- EXTERNAL
    CSessions *_sessions;
@@ -32,49 +30,48 @@ private:
    CArrayList<CBook *> *_bearLvArr;
    CArrayList<CBook *> *_bullLvArr;
    
-   double _mostRecentBear;
    int _lookbackPeriod;
    int _maxBearCDLookback;
-   int _lastHandledPeriod;
+   datetime _lastHandledPeriod;
+   datetime _maxBookAge;
    bool _filterInSession;
    DIR _bias;
+
+   double _mostRecentBear;
+   double _mostRecentBull;
+   double _lastBearCdOpen;
    
-   DIR CandleDir(const double open, const double high, const double low, const double close);
-   bool IsBullDir(DIR dir);
-   bool IsBearDir(DIR dir);
-   bool IsNeutralDir(DIR dir);
-   bool IsBullCandle(const double open, const double high, const double low, const double close);
-   bool IsBearCandle(const double open, const double high, const double low, const double close);
-   bool IsNeutralCandle(const double open, const double high, const double low, const double close);
+   datetime _lastBearCdDate;
+   bool _isLastBearCdBroken;
    
-   void AddBearBook(int index, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[]);
-   
-   //void UpdateBearBooks();
+   void AddBearBook(datetime time, double price);
+   void AddBullBook(datetime time, double price);
+
+   void UpdateAllBooks(datetime time, double price);
+   void CleanBooks(CArrayList<CBook *> *bookArr, datetime time, double price);
+
+   void Initialize(datetime time);
 
 public:
-   CBooks(bool filterInSession, CSessions *sessions, int lookbackPeriod);
+   CBooks(string prefix, int offset, bool filterInSession, CSessions *sessions, int lookbackPeriod, color bearLvl, color bullLvl);
    ~CBooks();
-   
-   void Initialize(datetime time);
-   bool IsInitialized();
    
    DIR CurrentBias();
    
-   void Handle(int current, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[]);
-                       
+   void ProcessTime(int current, int total, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[]);
 };
   
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-CBooks::CBooks(bool filterInSession, CSessions *sessions, int lookbackPeriod)
+CBooks::CBooks(string prefix, int offset, bool filterInSession, CSessions *sessions, int lookbackPeriod, color bearLvl, color bullLvl)
 {
-   _isInitialized = false;
+   _offset = offset;
+   _prefix = prefix;
    _lookbackPeriod = lookbackPeriod;
    _filterInSession = filterInSession;
    _maxBearCDLookback = 2;
-   _lastHandledPeriod = -1;
+   _lastHandledPeriod = 0;
    _bias = DIR_NONE;
+   _clrBearLevel = bearLvl;
+   _clrBullLevel = bullLvl;
    
    _bearLvArr = new CArrayList<CBook*>();
    _bullLvArr = new CArrayList<CBook*>();
@@ -82,11 +79,8 @@ CBooks::CBooks(bool filterInSession, CSessions *sessions, int lookbackPeriod)
    _sessions = sessions;
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
 CBooks::~CBooks()
-  {
+{
    delete _prevCandleArr;
    
    CBook *book;
@@ -107,52 +101,45 @@ CBooks::~CBooks()
    delete _bullLvArr;
    
    _sessions = NULL;
-  }
-//+------------------------------------------------------------------+
+}
 
 void CBooks::Initialize(datetime time)
 {
-   if (!_isInitialized)
+   if (_lastHandledPeriod == 0)
    {
-      //
       _prevCandleArr = new CArrayList<DIR>();
-      _isInitialized = true;
-   }
-}
+      _lastHandledPeriod = time;
 
-bool CBooks::IsInitialized()
-{
-   return _isInitialized;
+      PrintFormat("Initialized Books [%s]", TimeToString(_lastHandledPeriod));
+   }
 }
 
 DIR CBooks::CurrentBias()
 {
-   return DIR_NONE;
+   return _bias;
 }
 
-void CBooks::Handle(int current, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[])
+void CBooks::ProcessTime(int current, int total, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[])
 {
-   if (current == _lastHandledPeriod)
-   {
-      //PrintFormat("Processing Period %i - %s that was already processed", current, TimeToString(time[current]));
-   }
+   if (_lastHandledPeriod == 0) Initialize(time[current]);
+   if ((current+1) == total) return;
+
+   PrintFormat("[Books] Processing Period %s", TimeToString(time[current]));
    
-   _lastHandledPeriod = current;
+   _lastHandledPeriod = time[current];
+   _maxBookAge = _lastHandledPeriod + (3 * 24 * 60 * 60); // TODO: extend to accomodate for weekends
    
    DIR currentBias = DIR_NONE;
    
    // don't do anything if we don't have at least 2 times to work with
-   if (current < 2)
+   if (current < 1)
       return;
    
    bool inSession = (!_filterInSession) || _sessions.IsInSession(time[current]);
    
-   //PrintFormat("Processing Period %i - %s", current, TimeToString(time[current]));
-   
-   // the previous candle
-   if (!IsNeutralCandle(open[current-1], high[current-1], low[current-1], close[current-1]))
+   if (!CTimeHelpers::IsNeutralCandle(open[current-1], high[current-1], low[current-1], close[current-1]))
    {
-      _prevCandleArr.Add(CandleDir(open[current-1], high[current-1], low[current-1], close[current-1]));
+      _prevCandleArr.Add(CTimeHelpers::CandleDir(open[current-1], high[current-1], low[current-1], close[current-1]));
       if (_prevCandleArr.Count() > _maxBearCDLookback)
          _prevCandleArr.RemoveAt(0); // RemoveAt(0) = shift
    }
@@ -164,7 +151,10 @@ void CBooks::Handle(int current, const datetime &time[], const double &open[], c
       _prevCandleArr.TryGetValue(0, dir1);
       _prevCandleArr.TryGetValue(1, dir2);
       
-      isBearLv = IsBullDir(dir1) && IsBearDir(dir2) && IsBearCandle(open[current], high[current], low[current], close[current]);
+      isBearLv =
+         CTimeHelpers::IsBullDir(dir1) &&
+         CTimeHelpers::IsBearDir(dir2) &&
+         CTimeHelpers::IsBearCandle(open[current], high[current], low[current], close[current]);
    }
 
    if (isBearLv)
@@ -172,188 +162,99 @@ void CBooks::Handle(int current, const datetime &time[], const double &open[], c
    
    if (inSession && isBearLv)
    {
-      AddBearBook(current - 1, time, open, high, low, close);
+      AddBearBook(time[current-1], close[current-1]);
    }
-   
-   CBook *book;
-   for (int i = _bearLvArr.Count(); i > 0; i--)
-   {
-      if (_bullLvArr.TryGetValue(i-1, book))
-      {
-         if (close[current] > book.IsExpired(current - _lookbackPeriod))
-         {
-            PrintFormat("Removing Book - %s", book.ToString());
-            _bearLvArr.Remove(book);
-            delete book;
-         }
-      }
-   }
-   
-   //UpdateBearBooks(current, close[current - 1], close[current]);
-   
-   
-   /*
-   // TODO:
 
-   if (inSess && isBearLv)
+   if (CTimeHelpers::IsBearCandle(open[current], high[current], low[current], close[current]))
    {
-      mostRecentBear = close[current - 1];
-      
-      CPointOfInterest *poi = new CPointOfInterest();
-      poi.name = StringFormat("BEAR_LVL[%i]", current - 1);
-      poi.period = time[current - 1];
-      poi.price = mostRecentBear;
-      poi.index = current - 1;
-            
-      bearLvArr.Add(poi);
-      TrendCreate(0, poi.name, 0, poi.period, mostRecentBear, poi.period+600, mostRecentBear, InpBearish, InpLineStyle, InpLineWidth, false, false, false, true);
-      
-      TrimLineArr(bearLvArr, MAX_LINE);
-   }
-   
-   for (int i = 0; i < bearLvArr.Count(); i++)
-   {
-      CPointOfInterest *poi;
-      if (bearLvArr.TryGetValue(i, poi))
-      {
-         if (close[current] > poi.price || IsLineExpired(current, poi))
-         {
-            invalidLvIndexArr.Push(poi);
-         }
-      }
-   }
-   
-   while (invalidLvIndexArr.Count() > 0)
-   {
-      CPointOfInterest *l = invalidLvIndexArr.Pop();
-      bool bSuccess = bearLvArr.Remove(l);
-      if (!TrendDelete(0, l.name))
-      {
-         PrintFormat("Failed to Delete [%s]", l.name);
-      }
-      delete l;
-   }
-   
-   ColorizeLevels(bearLvArr, InpBearish);
-
-   // Bullish Levels : bull & close > last bear open
-   
-   if (IsBearCandle(open[current], high[current], low[current], close[current]))
-   {
-       lastBearCdOpen = open[current];
-       lastBearCdIndex = current;
-       isLastBearCdBroken = false;
+       _lastBearCdOpen = open[current];
+       _lastBearCdDate = time[current];
+       _isLastBearCdBroken = false;
    }
        
-   bool isBullLv = IsBullCandle(open[current], high[current], low[current], close[current]) && close[current] > lastBearCdOpen && !isLastBearCdBroken;
+   bool isBullLv =
+      CTimeHelpers::IsBullCandle(open[current], high[current], low[current], close[current]) &&
+      close[current] > _lastBearCdOpen &&
+      !_isLastBearCdBroken;
+
    if (isBullLv)
    {
-       isLastBearCdBroken = true;
-       lBias = BULL_DIR;
+       _isLastBearCdBroken = true;
    }
    
-   if (inSess && isBullLv)
+   if (inSession && isBullLv)
    {
-       mostRecentBull = lastBearCdOpen;
-       
-       CPointOfInterest *poi = new CPointOfInterest();
-       poi.name = StringFormat("BULL_LVL[%i]", current);
-       poi.period = time[current] - (PeriodSeconds() * (current - lastBearCdIndex));
-       poi.price = mostRecentBull; // Set to "Previous" Candles Open (the high of the last bull)
-       poi.index = lastBearCdIndex;
-
-       bullLvArr.Add(poi);
-       
-       TrendCreate(0, poi.name, 0, poi.period, mostRecentBull, poi.period+600, mostRecentBull, InpBullish, InpLineStyle, InpLineWidth, false, false, false, true);
-
-       TrimLineArr(bullLvArr, MAX_LINE);
+      AddBullBook(_lastBearCdDate, _lastBearCdOpen);
    }
-   
-   for (int i = 0; i < bullLvArr.Count(); i++)
+
+   UpdateAllBooks(time[current], close[current]);
+}
+
+void CBooks::UpdateAllBooks(datetime time, double price)
+{
+   CleanBooks(_bearLvArr, time, price);
+   CleanBooks(_bullLvArr, time, price);
+}
+
+void CBooks::CleanBooks(CArrayList<CBook *> *bookArr, datetime time, double price)
+{
+   CBook *book;
+   for (int i = bookArr.Count(); i > 0; i--)
    {
-      CPointOfInterest *poi;
-      if (bullLvArr.TryGetValue(i, poi))
+      if (bookArr.TryGetValue(i-1, book))
       {
-         if (close[current] < poi.price || IsLineExpired(current, poi))
+         BOOK_STATE state;
+         if (book.IsComplete(time, price, state))
          {
-            invalidLvIndexArr.Push(poi);
+            PrintFormat("Closing Book - %s, State=%i", book.ToString(), state);
+            bookArr.Remove(book);
+            delete book;
+         }
+         else
+         {
+            // PrintFormat("Updating Book - %s, State=%i", book.ToString(), state);
+            book.Update(time, price, i);
          }
       }
    }
-           
-   while (invalidLvIndexArr.Count() > 0)
-   {
-      CPointOfInterest *l = invalidLvIndexArr.Pop();
-      bool bSuccess = bullLvArr.Remove(l);
-      if (!TrendDelete(0, l.name))
-      {
-         PrintFormat("Failed to Delete [%s]", l.name);
-      }
-      delete l;
-   }
-   
-   ColorizeLevels(bullLvArr, InpBullish);
-   
-   bool biasChanged = (lBias != gBias);
-   
-   if (biasChanged)
-   {
-      gBias = lBias;
-   }
-
-   */
 }
 
-void CBooks::AddBearBook(int index, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[])
+void CBooks::AddBearBook(datetime time, double price)
 {
-   _mostRecentBear = close[index];
+   _mostRecentBear = price;
 
-   CBook *book = new CBook(index, time[index], close[index]);
+   CBook *book = new CBook(_prefix, _offset, BOOK_TYPE_BEAR, time, price, _maxBookAge, _clrBearLevel);
 
    if (_bearLvArr.IndexOf(book) < 0)
    {
-      PrintFormat("Book Not Found [%s]", book.ToString());
+      PrintFormat("Creating Book - %s", book.ToString());
       _bearLvArr.Add(book);
    }
    else
    {
-      PrintFormat("Found Book [%s]", book.ToString());
+      //PrintFormat("Updating Book - %s", book.ToString());
+      
+      // TODO: need to remove book when updating when candle is still forming
    }
-   
-   // TODO: trim if needed
+
+   PrintFormat("Bear Book Stats [Count=%i]", _bearLvArr.Count());
 }
 
-DIR CBooks::CandleDir(const double open, const double high, const double low, const double close)
+void CBooks::AddBullBook(datetime time, double price)
 {
-   return close > open ? DIR_BULL : (close < open ? DIR_BEAR : DIR_NONE);
-}
+   CBook *book = new CBook(_prefix, _offset, BOOK_TYPE_BULL, time, price, _maxBookAge, _clrBullLevel);
 
-bool CBooks::IsBullDir(DIR dir)
-{
-   return dir == DIR_BULL;
-}
+   if (_bullLvArr.IndexOf(book) < 0)
+   {
+      PrintFormat("Creating Book - %s", book.ToString());
+      _bullLvArr.Add(book);
+   }
+   else
+   {
+      //PrintFormat("Updating Book - %s", book.ToString());
 
-bool CBooks::IsBearDir(DIR dir)
-{
-   return dir == DIR_BEAR;
-}
+      // TODO: need to remove book when updating when candle is still forming
+   }
 
-bool CBooks::IsNeutralDir(DIR dir)
-{
-   return dir == DIR_NONE;
-}
-
-bool CBooks::IsBullCandle(const double open, const double high, const double low, const double close)
-{
-   return IsBullDir(CandleDir(open, high, low, close));
-}
-
-bool CBooks::IsBearCandle(const double open, const double high, const double low, const double close)
-{
-   return IsBearDir(CandleDir(open, high, low, close));
-}
-
-bool CBooks::IsNeutralCandle(const double open, const double high, const double low, const double close)
-{
-   return IsNeutralDir(CandleDir(open, high, low, close));
+   PrintFormat("Bull Book Stats [Count=%i]", _bullLvArr.Count());
 }

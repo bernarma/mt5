@@ -14,6 +14,7 @@ class CHistoricalFix
 private:
    int _offset;
    
+   string _prefix;
    string _name;
    datetime _date;
    double _price;
@@ -24,7 +25,7 @@ private:
    string TextName();
 
 public:
-   CHistoricalFix(string name, datetime date, double price, int offset, color clr, ENUM_LINE_STYLE style);
+   CHistoricalFix(string prefix, string name, datetime date, double price, int offset, color clr, ENUM_LINE_STYLE style);
    ~CHistoricalFix();
    
    string GetName();
@@ -33,8 +34,9 @@ public:
    void Update(datetime current);
 };
 
-CHistoricalFix::CHistoricalFix(string name, datetime date, double price, int offset, color clr, ENUM_LINE_STYLE style)
+CHistoricalFix::CHistoricalFix(string prefix, string name, datetime date, double price, int offset, color clr, ENUM_LINE_STYLE style)
 {
+   _prefix = prefix;
    _name = name;
    _date = date;
    _price = price;
@@ -51,17 +53,17 @@ CHistoricalFix::~CHistoricalFix()
 
 string CHistoricalFix::GetName()
 {
-   return StringFormat("HISTORICAL_FIX [%s %s]", _name, TimeToString(_date));
+   return StringFormat("[%s]Fix_%s_%s", _prefix, _name, TimeToString(_date));
 }
 
 string CHistoricalFix::LineName()
 {
-   return StringFormat("HISTORICAL_FIX-LINE [%s %s]", _name, TimeToString(_date));
+   return StringFormat("[%s]Fix_%s_%s_LVL", _prefix, _name, TimeToString(_date));
 }
 
 string CHistoricalFix::TextName()
 {
-   return StringFormat("HISTORICAL_FIX-TEXT [%s %s]", _name, TimeToString(_date));
+   return StringFormat("[%s]Fix_%s_%s_LBL", _prefix, _name, TimeToString(_date));
 }
 
 void CHistoricalFix::Update(datetime current)

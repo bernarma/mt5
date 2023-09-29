@@ -14,13 +14,14 @@ class CFixes
 {
 
 private:
+   string _prefix;
    int _maxFixes;
    int _offset;
    
    CArrayList<CFix *> *_fixes;
       
 public:
-   CFixes(int maxHistoricalFixesToShow, int offset);
+   CFixes(string prefix, int maxHistoricalFixesToShow, int offset);
    ~CFixes();
    
    void CreateFix(string name, double time, int tz, int serverOffset, color clr, ENUM_LINE_STYLE style);
@@ -28,8 +29,9 @@ public:
    
 };
 
-CFixes::CFixes(int maxHistoricalFixesToShow, int offset)
+CFixes::CFixes(string prefix, int maxHistoricalFixesToShow, int offset)
 {
+   _prefix = prefix;
    _maxFixes = maxHistoricalFixesToShow;
    _offset = offset;
          
@@ -51,7 +53,7 @@ CFixes::~CFixes()
 
 void CFixes::CreateFix(string name, double time, int tz, int serverOffset, color clr, ENUM_LINE_STYLE style)
 {
-   CFix *fix = new CFix(name, _maxFixes, _offset, clr, style);
+   CFix *fix = new CFix(_prefix, name, _maxFixes, _offset, clr, style);
    fix.Initialize(time, tz, serverOffset);
    _fixes.Add(fix);
 }
