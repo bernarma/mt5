@@ -29,7 +29,7 @@ private:
    string ToString();
                      
 public:
-   CSessionRange(string prefix, string name, datetime start, double high, double low, color clr);
+   CSessionRange(string prefix, string name, datetime start, datetime end, double high, double low, color clr);
    ~CSessionRange();
    
    void Update(datetime dt, double high, double low);
@@ -45,12 +45,12 @@ string CSessionRange::GetDrawingNameLabel(void)
    return StringFormat("[%s]Sess_%s_%s_LBL", _prefix, _name, TimeToString(_start, TIME_DATE));
 }
 
-CSessionRange::CSessionRange(string prefix, string name, datetime start, double high, double low, color clr)
+CSessionRange::CSessionRange(string prefix, string name, datetime start, datetime end, double high, double low, color clr)
 {
    _prefix = prefix;
    _name = name;
    _start = start;
-   _end = start;
+   _end = end;
    _high = high;
    _low = low;
    _clr = clr;
@@ -70,7 +70,7 @@ CSessionRange::~CSessionRange()
   
 void CSessionRange::Update(datetime dt, double high, double low)
 {
-   _end = dt;
+   //_end = dt;
    _high = MathMax(high, _high);
    _low = MathMin(low, _low);
 
