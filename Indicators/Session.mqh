@@ -37,9 +37,9 @@ private:
    CQueue<CSessionRange *> *_sessions;
    CSessionRange *_currentSession;
    
-   datetime GetNextSession(datetime currentStart);
-   void MoveToNextSession();
-   void SetSession(datetime date);
+   void GetSessionTimes(datetime date, datetime &start, datetime &end);
+   void GetNextSessionTimes(datetime date, datetime &start, datetime &end);
+   void MoveToNextSession(datetime now = NULL);
 
    string GetDrawingName(void);
       
@@ -113,7 +113,7 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
 {
    if (_start == NULL)
    {
-      SetSession(dtCurrent);
+      MoveToNextSession(dtCurrent);
 
       // draw the start of the next session - this will be moved during the creation of a session as needed
       if (_showNextSession)
@@ -132,7 +132,11 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
       
       // move to the next session (if enabled)
       if (_showNextSession)
-         CDrawingHelpers::VLineMove(0, GetDrawingName(), GetNextSession(_start));
+      {
+         datetime start, end;
+         GetNextSessionTimes(_start, start, end);
+         CDrawingHelpers::VLineMove(0, GetDrawingName(), start);
+      }
    }
    else if (_currentSession != NULL && !inSession)
    {
@@ -157,49 +161,44 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
    if (state == DUR_AFTER) MoveToNextSession();
 }
 
-datetime CSession::GetNextSession(datetime date)
+void CSession::GetSessionTimes(datetime date, datetime &start, datetime &end)
 {
-   MqlDateTime mqDate;
-   TimeToStruct(date, mqDate);
-   int daysToIncrement = (mqDate.day_of_week != 5) ? 1 : 3;
+   MqlDateTime sDate;
+   TimeToStruct(date, sDate);
+
+   sDate.hour = 0;
+   sDate.min = 0;
+   sDate.sec = 0;
+
+   bool isDaylightSavingsTime = CCalendarHelpers::IsInDaylightSavingsTime(_sessionTz, date);
+   int daylightSavingsTimeOffset = ((isDaylightSavingsTime) ? 60*60 : 0);
+   
+   start = StructToTime(sDate) + _startHourInSeconds + daylightSavingsTimeOffset;
+   end = start + (_endHourInSeconds - _startHourInSeconds);
+
+   if (_startHourInSeconds > _endHourInSeconds)
+      end = end + (24 * 60 * 60);
+}
+
+void CSession::GetNextSessionTimes(datetime date, datetime &start, datetime &end)
+{
+   MqlDateTime sDate;
+   TimeToStruct(date, sDate);
+   int daysToIncrement = (sDate.day_of_week != 5) ? 1 : 3;
 
    CDateTime dt;
    dt.DateTime(date);
    dt.DayInc(daysToIncrement);
 
-   return dt.DateTime();
+   GetSessionTimes(dt.DateTime(), start, end);
 }
 
-void CSession::MoveToNextSession()
+void CSession::MoveToNextSession(datetime now = NULL)
 {
-   SetSession(GetNextSession(_start));
-}
+   GetNextSessionTimes((now != NULL) ? now : _start, _start, _end);
 
-void CSession::SetSession(datetime date)
-{
-   // Initialise using the current date as the start of the session window
-   MqlDateTime dtS;
-   TimeToStruct(date, dtS);
-   
-   MqlDateTime sToday;
-   sToday.year = dtS.year;
-   sToday.mon = dtS.mon;
-   sToday.day = dtS.day;
-   sToday.hour = 0;
-   sToday.min = 0;
-   sToday.sec = 0;
-
-   bool isDaylightSavingsTime = CCalendarHelpers::IsInDaylightSavingsTime(_sessionTz, date);
-   int daylightSavingsTimeOffset = ((isDaylightSavingsTime) ? 60*60 : 0);
-   
-   _start = StructToTime(sToday) + _startHourInSeconds + daylightSavingsTimeOffset;
-   _end = _start + (_endHourInSeconds - _startHourInSeconds);
-
-   if (_startHourInSeconds > _endHourInSeconds)
-      _end = _end + (24 * 60 * 60);
-   
-   PrintFormat("Session [%s] Created [%s - %s] based on Input Date [%s]",
-      _name, TimeToString(_start), TimeToString(_end), TimeToString(date));
+   PrintFormat("Moved to Next Session [%s] Created [%s - %s] based on Input Date [%s]",
+      _name, TimeToString(_start), TimeToString(_end), TimeToString(now));
 }
 
 bool CSession::IsInSession(datetime date, DUR &state)
