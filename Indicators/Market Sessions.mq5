@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2023, Mark Bernardinis"
 #property link      "https://www.mtnsconsulting.com"
-#property version   "1.00"
+#property version   "1.1"
 #property indicator_chart_window
 
 #property indicator_plots   0
