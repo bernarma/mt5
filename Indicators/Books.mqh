@@ -110,7 +110,7 @@ void CBooks::Initialize(datetime time)
       _prevCandleArr = new CArrayList<DIR>();
       _lastHandledPeriod = time;
 
-      PrintFormat("Initialized Books [%s]", TimeToString(_lastHandledPeriod));
+      //PrintFormat("Initialized Books [%s]", TimeToString(_lastHandledPeriod));
    }
 }
 
@@ -124,7 +124,7 @@ void CBooks::ProcessTime(int current, int total, const datetime &time[], const d
    if (_lastHandledPeriod == 0) Initialize(time[current]);
    if ((current+1) == total) return;
 
-   PrintFormat("[Books] Processing Period %s", TimeToString(time[current]));
+   //PrintFormat("[Books] Processing Period %s", TimeToString(time[current]));
    
    _lastHandledPeriod = time[current];
    _maxBookAge = _lastHandledPeriod + (3 * 24 * 60 * 60); // TODO: extend to accomodate for weekends
@@ -206,7 +206,7 @@ void CBooks::CleanBooks(CArrayList<CBook *> *bookArr, datetime time, double pric
          BOOK_STATE state;
          if (book.IsComplete(time, price, state))
          {
-            PrintFormat("Closing Book - %s, State=%i", book.ToString(), state);
+            //PrintFormat("Closing Book - %s, State=%i", book.ToString(), state);
             bookArr.Remove(book);
             delete book;
          }
@@ -227,7 +227,7 @@ void CBooks::AddBearBook(datetime time, double price)
 
    if (_bearLvArr.IndexOf(book) < 0)
    {
-      PrintFormat("Creating Book - %s", book.ToString());
+      //PrintFormat("Creating Book - %s", book.ToString());
       _bearLvArr.Add(book);
    }
    else
@@ -237,7 +237,7 @@ void CBooks::AddBearBook(datetime time, double price)
       // TODO: need to remove book when updating when candle is still forming
    }
 
-   PrintFormat("Bear Book Stats [Count=%i]", _bearLvArr.Count());
+   //PrintFormat("Bear Book Stats [Count=%i]", _bearLvArr.Count());
 }
 
 void CBooks::AddBullBook(datetime time, double price)
@@ -246,7 +246,7 @@ void CBooks::AddBullBook(datetime time, double price)
 
    if (_bullLvArr.IndexOf(book) < 0)
    {
-      PrintFormat("Creating Book - %s", book.ToString());
+      //PrintFormat("Creating Book - %s", book.ToString());
       _bullLvArr.Add(book);
    }
    else
@@ -256,5 +256,5 @@ void CBooks::AddBullBook(datetime time, double price)
       // TODO: need to remove book when updating when candle is still forming
    }
 
-   PrintFormat("Bull Book Stats [Count=%i]", _bullLvArr.Count());
+   //PrintFormat("Bull Book Stats [Count=%i]", _bullLvArr.Count());
 }

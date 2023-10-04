@@ -17,6 +17,7 @@ private:
 public:
    static bool TrendCreate(const long      chart_ID=0,
               const string          name="TrendLine",
+              const string          desc="",
               const int             sub_window=0,
               datetime              time1=0,
               double                price1=0,
@@ -133,6 +134,7 @@ CDrawingHelpers::~CDrawingHelpers()
 //+------------------------------------------------------------------+
 bool CDrawingHelpers::TrendCreate(const long            chart_ID=0,        // chart's ID
                  const string          name="TrendLine",  // line name
+                 const string          desc="",           // description
                  const int             sub_window=0,      // subwindow index
                  datetime              time1=0,           // first point time
                  double                price1=0,          // first point price
@@ -151,11 +153,12 @@ bool CDrawingHelpers::TrendCreate(const long            chart_ID=0,        // ch
    ChangeTrendEmptyPoints(time1,price1,time2,price2);
    ResetLastError();
    if(!ObjectCreate(chart_ID,name,OBJ_TREND,sub_window,time1,price1,time2,price2))
-     {
+   {
       Print(__FUNCTION__,
             ": failed to create a trend line! [%s] Error code = ", name, GetLastError());
       return(false);
-     }
+   }
+
    ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
    ObjectSetInteger(chart_ID,name,OBJPROP_STYLE,style);
    ObjectSetInteger(chart_ID,name,OBJPROP_WIDTH,width);
@@ -166,6 +169,9 @@ bool CDrawingHelpers::TrendCreate(const long            chart_ID=0,        // ch
    ObjectSetInteger(chart_ID,name,OBJPROP_RAY_RIGHT,ray_right);
    ObjectSetInteger(chart_ID,name,OBJPROP_HIDDEN,hidden);
    ObjectSetInteger(chart_ID,name,OBJPROP_ZORDER,z_order);
+
+   ObjectSetString(chart_ID,name,OBJPROP_TEXT,desc);
+
    return(true);
 }
  

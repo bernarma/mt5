@@ -36,6 +36,7 @@ protected:
    
    string GetDrawingNameLevel(void);
    string GetDrawingNameLabel(void);
+   string GetDrawingNameText(void);
 
 public:
    CBook(string prefix, int offset, BOOK_TYPE type, datetime time, double price, datetime expiration, color clr);
@@ -64,7 +65,7 @@ CBook::CBook(string prefix, int offset, BOOK_TYPE type, datetime time, double pr
    _offset = offset;
 
    // Draw Level (with offset)
-   CDrawingHelpers::TrendCreate(0, GetDrawingNameLevel(), 0, _time, _price, _time + _offset, _price, _clr, STYLE_SOLID, 1, false, false, false, false, 1);
+   CDrawingHelpers::TrendCreate(0, GetDrawingNameLevel(), GetDrawingNameText(), 0, _time, _price, _time + _offset, _price, _clr, STYLE_SOLID, 1, false, false, false, false, 1);
 
    // Draw Label (with offset)
    CDrawingHelpers::TextCreate(0, GetDrawingNameLabel(), 0, _time + _offset, _price, "0", "Arial", 6, _clr, 0, ANCHOR_LEFT, false, false, true, 1);
@@ -130,12 +131,6 @@ bool CBook::Equals(CBook *value)
    return (value._time == _time && value._type == _type);
 }
 
-int  CBook::HashCode(void)
-{
-   // TODO: return correct hashcode
-   return 10;
-}
-
 string CBook::GetDrawingNameLevel(void)
 {
    return StringFormat("[%s]Book_%s_%s_LVL", _prefix, _type == BOOK_TYPE_BULL ? "BULL": "BEAR", TimeToString(_time));
@@ -144,4 +139,10 @@ string CBook::GetDrawingNameLevel(void)
 string CBook::GetDrawingNameLabel(void)
 {
    return StringFormat("[%s]Book_%s_%s_LBL", _prefix, _type == BOOK_TYPE_BULL ? "BULL": "BEAR", TimeToString(_time));
+}
+
+string CBook::GetDrawingNameText(void)
+{
+   return "";
+   //return StringFormat("%s Book", _type == BOOK_TYPE_BULL ? "Bull": "Bear");
 }

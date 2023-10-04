@@ -17,22 +17,26 @@ private:
 
    CArrayList<CSession *> *_sessions;
 
+   int _serverSecondsOffsetTz;
+
 public:
-   CSessions();
+   CSessions(int serverSecondsOffsetTz);
    ~CSessions();
    
    void CreateSession(
       string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession,
-      int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz, SESSION_TZ session);
+      int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session);
       
    bool IsInSession(datetime time);
    
    void ProcessTime(datetime time, double open, double high, double low, double close);
 };
 
-CSessions::CSessions()
+CSessions::CSessions(int serverSecondsOffsetTz)
 {
    _sessions = new CArrayList<CSession *>();
+
+   _serverSecondsOffsetTz = serverSecondsOffsetTz;
 }
 
 CSessions::~CSessions()
@@ -50,10 +54,10 @@ CSessions::~CSessions()
 
 void CSessions::CreateSession(
    string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession, int startHour, int startMin,
-   int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz, SESSION_TZ session)
+   int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session)
 {
    CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, showNextSession, session);
-   s.Initialize(startHour, startMin, endHour, endMin, sessionSecondsOffsetTz, serverSecondsOffsetTz);
+   s.Initialize(startHour, startMin, endHour, endMin, sessionSecondsOffsetTz, _serverSecondsOffsetTz);
    _sessions.Add(s);
 }
 

@@ -10,9 +10,10 @@
 #include <Tools\DateTime.mqh>
 
 enum SESSION_TZ {
-   SESSION_TZ_ASIA = 0, // Asia
-   SESSION_TZ_LONDON = 1, // London
-   SESSION_TZ_NEWYORK = 2, // New York
+   SESSION_TZ_SYDNEY = 0, // Sydney
+   SESSION_TZ_ASIA = 1, // Asia
+   SESSION_TZ_LONDON = 2, // London
+   SESSION_TZ_NEWYORK = 3, // New York
 };
 
 class CCalendarHelpers
@@ -43,7 +44,15 @@ bool CCalendarHelpers::IsInDaylightSavingsTime(SESSION_TZ tz, datetime date)
    CDateTime d();
    d.DateTime(date);
 
-   if (tz == SESSION_TZ_LONDON)
+   if (tz == SESSION_TZ_SYDNEY)
+   {
+      // Sydney Session: clocks go forward 1 hour at 3am on the first Sunday in April, and back 1 hour at 3am on the first Sunday in October
+      d.mon = 4;  datetime firstSundayInApril = GetNDayOfWeekOfMonth(d.DateTime(), 0, 1);
+      d.mon = 10; datetime firstSundayInOctober = GetNDayOfWeekOfMonth(d.DateTime(), 0, 1);
+
+      return (date >= firstSundayInApril && date < firstSundayInOctober);
+   }
+   else if (tz == SESSION_TZ_LONDON)
    {
       // London Session: clocks go forward 1 hour at 1am on the last Sunday in March, and back 1 hour at 2am on the last Sunday in October
       d.mon = 3;  datetime lastSundayOfMarch = GetNDayOfWeekOfMonth(d.DateTime(), 0, -1);
