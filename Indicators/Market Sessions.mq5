@@ -31,8 +31,10 @@ input bool InpShowNextSession1 = true; // Show Next Session 1
 input string InpSession1Name = "Sydney"; // Session 1 Name
 input SESSION_TZ InpSession1Type = SESSION_TZ_SYDNEY; // Session 1 Type
 input color InpSession1Color = clrBlueViolet; // Session 1 Color
-input int InpSession1StartHour = 23; // Session 1 Time (Start Hour)
-input int InpSession1StartMin = 30; // Session 1 Time (Start Min)
+input DAY_OF_WEEK InpSession1StartDay = DAY_OF_WEEK_SUNDAY; // Session 1 Start Day
+input DAY_OF_WEEK InpSession1EndDay = DAY_OF_WEEK_THURSDAY; // Session 1 End Day
+input int InpSession1StartHour = 20; // Session 1 Time (Start Hour)
+input int InpSession1StartMin = 0; // Session 1 Time (Start Min)
 input int InpSession1EndHour = 2; // Session 1 Time (End Hour)
 input int InpSession1EndMin = 0; // Session 1 Time (End Min)
 
@@ -40,7 +42,9 @@ input bool InpShowSession2 = true; // Show Session 2
 input bool InpShowNextSession2 = true; // Show Next Session 2
 input string InpSession2Name = "Asia"; // Session 2 Name
 input SESSION_TZ InpSession2Type = SESSION_TZ_ASIA; // Session 2 Type
-input color InpSession2Color = clrBlueViolet; // Session 2 Color
+input color InpSession2Color = clrAntiqueWhite; // Session 2 Color
+input DAY_OF_WEEK InpSession2StartDay = DAY_OF_WEEK_SUNDAY; // Session 2 Start Day
+input DAY_OF_WEEK InpSession2EndDay = DAY_OF_WEEK_THURSDAY; // Session 2 End Day
 input int InpSession2StartHour = 23; // Session 2 Time (Start Hour)
 input int InpSession2StartMin = 30; // Session 2 Time (Start Min)
 input int InpSession2EndHour = 2; // Session 2 Time (End Hour)
@@ -50,6 +54,8 @@ input bool InpShowSession3 = true; // Show Session 3
 input bool InpShowNextSession3 = true; // Show Next Session 3
 input string InpSession3Name = "London"; // Session 3 Name
 input SESSION_TZ InpSession3Type = SESSION_TZ_LONDON; // Session 3 Type
+input DAY_OF_WEEK InpSession3StartDay = DAY_OF_WEEK_MONDAY; // Session 3 Start Day
+input DAY_OF_WEEK InpSession3EndDay = DAY_OF_WEEK_FRIDAY; // Session 3 End Day
 input color InpSession3Color = clrGold; // Session 3 Color
 input int InpSession3StartHour = 5; // Session 3 Time (Start Hour)
 input int InpSession3StartMin = 30; // Session 3 Time (Start Min)
@@ -60,6 +66,8 @@ input bool InpShowSession4 = true; // Show Session 4
 input bool InpShowNextSession4 = true; // Show Next Session 4
 input string InpSession4Name = "New York"; // Session 4 Name
 input SESSION_TZ InpSession4Type = SESSION_TZ_NEWYORK; // Session 4 Type
+input DAY_OF_WEEK InpSession4StartDay = DAY_OF_WEEK_MONDAY; // Session 4 Start Day
+input DAY_OF_WEEK InpSession4EndDay = DAY_OF_WEEK_FRIDAY; // Session 4 End Day
 input color InpSession4Color = clrLimeGreen; // Session 4 Color
 input int InpSession4StartHour = 11; // Session 4 Time (Start Hour)
 input int InpSession4StartMin = 0; // Session 4 Time (Start Min)
@@ -85,33 +93,21 @@ void Initialize(datetime dt)
 {
    g_Sessions = new CSessions((int)dt);
 
-   if (InpShowSession1)
-   {
-      g_Sessions.CreateSession(
-         INDICATOR_SHORT_NAME, InpSession1Name, InpSession1Color, InpMaxHistoricalSessionsToShow, InpShowNextSession1, InpSession1StartHour,
-         InpSession1StartMin, InpSession1EndHour, InpSession1EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession1Type);
-   }
+   g_Sessions.CreateSession(
+      INDICATOR_SHORT_NAME, InpSession1Name, InpSession1Color, InpMaxHistoricalSessionsToShow, InpShowSession1, InpShowNextSession1, InpSession1StartHour,
+      InpSession1StartMin, InpSession1EndHour, InpSession1EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession1Type, InpSession1StartDay, InpSession1EndDay);
    
-   if (InpShowSession2)
-   {
-      g_Sessions.CreateSession(
-         INDICATOR_SHORT_NAME, InpSession2Name, InpSession2Color, InpMaxHistoricalSessionsToShow, InpShowNextSession2, InpSession2StartHour,
-         InpSession2StartMin, InpSession2EndHour, InpSession2EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession2Type);
-   }      
-   
-   if (InpShowSession3)
-   {
-      g_Sessions.CreateSession(
-         INDICATOR_SHORT_NAME, InpSession3Name, InpSession3Color, InpMaxHistoricalSessionsToShow, InpShowNextSession3, InpSession3StartHour,
-         InpSession3StartMin, InpSession3EndHour, InpSession3EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession3Type);
-   }
+   g_Sessions.CreateSession(
+      INDICATOR_SHORT_NAME, InpSession2Name, InpSession2Color, InpMaxHistoricalSessionsToShow, InpShowSession2, InpShowNextSession2, InpSession2StartHour,
+      InpSession2StartMin, InpSession2EndHour, InpSession2EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession2Type, InpSession2StartDay, InpSession2EndDay);
 
-   if (InpShowSession4)
-   {
-      g_Sessions.CreateSession(
-         INDICATOR_SHORT_NAME, InpSession4Name, InpSession4Color, InpMaxHistoricalSessionsToShow, InpShowNextSession4, InpSession4StartHour,
-         InpSession4StartMin, InpSession4EndHour, InpSession4EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession4Type);
-   }
+   g_Sessions.CreateSession(
+      INDICATOR_SHORT_NAME, InpSession3Name, InpSession3Color, InpMaxHistoricalSessionsToShow, InpShowSession3, InpShowNextSession3, InpSession3StartHour,
+      InpSession3StartMin, InpSession3EndHour, InpSession3EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession3Type, InpSession3StartDay, InpSession3EndDay);
+
+   g_Sessions.CreateSession(
+      INDICATOR_SHORT_NAME, InpSession4Name, InpSession4Color, InpMaxHistoricalSessionsToShow, InpShowSession4, InpShowNextSession4, InpSession4StartHour,
+      InpSession4StartMin, InpSession4EndHour, InpSession4EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession4Type, InpSession4StartDay, InpSession4EndDay);
 
    PrintFormat("Initialised (Market Sessions)");
    

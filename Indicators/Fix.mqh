@@ -32,7 +32,7 @@ private:
    SESSION_TZ _session;
       
 public:
-   CFix(string prefix, string name, int hour, int min, int sessionSecondsOffsetTz, int maxHistoricalFixesToShow,
+   CFix(string prefix, string name, int hourUTC, int minUTC, int maxHistoricalFixesToShow,
         int drawingOffset, int serverOffset, SESSION_TZ session, color clr, ENUM_LINE_STYLE style);
 
    ~CFix();
@@ -43,7 +43,7 @@ public:
 
 };
 
-CFix::CFix(string prefix, string name, int hour, int min, int sessionSecondsOffsetTz, int maxHistoricalFixesToShow,
+CFix::CFix(string prefix, string name, int hourUTC, int minUTC, int maxHistoricalFixesToShow,
            int drawingOffset, int serverOffset, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
 {
    _prefix = prefix;
@@ -53,7 +53,7 @@ CFix::CFix(string prefix, string name, int hour, int min, int sessionSecondsOffs
    _drawingOffset = drawingOffset;
    _session = session;
 
-   _secondsFromMidnight = (((hour * 60) + min) * 60) + serverOffset - sessionSecondsOffsetTz;
+   _secondsFromMidnight = (((hourUTC * 60) + minUTC) * 60) + serverOffset;
    
    _maxHistoricalFixesToShow = maxHistoricalFixesToShow;
    
@@ -104,12 +104,12 @@ void CFix::Handle(datetime time, double price)
       CHistoricalFix *historicalFix = new CHistoricalFix(_prefix, _name, time, price, _drawingOffset, _clr, _style);
       historicalFix.Initialize();
       _historicalFixes.Add(historicalFix);
-      PrintFormat("Creating Historical Fix %s", historicalFix.GetName());
+      //PrintFormat("Creating Historical Fix %s", historicalFix.GetName());
       
       if (_historicalFixes.Count() > _maxHistoricalFixesToShow)
       {
          CLinkedListNode<CHistoricalFix *> *historicalFixNode = _historicalFixes.First();
-         PrintFormat("Removing Historical Fix %s", historicalFixNode.Value().GetName());
+         //PrintFormat("Removing Historical Fix %s", historicalFixNode.Value().GetName());
          delete historicalFixNode.Value();
          _historicalFixes.Remove(historicalFixNode);
       }

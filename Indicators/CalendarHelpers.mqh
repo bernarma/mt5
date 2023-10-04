@@ -9,6 +9,16 @@
 
 #include <Tools\DateTime.mqh>
 
+enum DAY_OF_WEEK {
+   DAY_OF_WEEK_SUNDAY = 0, // Sunday
+   DAY_OF_WEEK_MONDAY = 1, // Monday
+   DAY_OF_WEEK_TUESDAY = 2, // Tuesday
+   DAY_OF_WEEK_WEDNESDAY = 3, // Wednesday
+   DAY_OF_WEEK_THURSDAY = 4, // Thursday
+   DAY_OF_WEEK_FRIDAY = 5, // Friday
+   DAY_OF_WEEK_SATURDAY = 6, // Saturday
+};
+
 enum SESSION_TZ {
    SESSION_TZ_SYDNEY = 0, // Sydney
    SESSION_TZ_ASIA = 1, // Asia
@@ -50,7 +60,7 @@ bool CCalendarHelpers::IsInDaylightSavingsTime(SESSION_TZ tz, datetime date)
       d.mon = 4;  datetime firstSundayInApril = GetNDayOfWeekOfMonth(d.DateTime(), 0, 1);
       d.mon = 10; datetime firstSundayInOctober = GetNDayOfWeekOfMonth(d.DateTime(), 0, 1);
 
-      return (date >= firstSundayInApril && date < firstSundayInOctober);
+      return (date < firstSundayInApril || date >= firstSundayInOctober);
    }
    else if (tz == SESSION_TZ_LONDON)
    {

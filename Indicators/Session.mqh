@@ -28,23 +28,32 @@ private:
    string _prefix;
    string _name;
    color  _clr;
+   bool _isVisible;
    bool _showNextSession;
+
+   int _startDay;
+   int _endDay;
    int _startHourInSeconds;
-   int _endHourInSeconds;
+   int _durationInSeconds;
+
    int _maxHistoricalSessions;
-   datetime _start, _end;
+   datetime _start;
    
    CQueue<CSessionRange *> *_sessions;
    CSessionRange *_currentSession;
    
-   void GetSessionTimes(datetime date, datetime &start, datetime &end, bool &isDaylightSavingsTime);
-   void GetNextSessionTimes(datetime date, datetime &start, datetime &end, bool &isDaylightSavingsTime);
+   static datetime GetSessionStart(datetime date, int startTimeInSeconds);
+   datetime GetNextSessionStart(datetime date);
    void MoveToNextSession(datetime now = NULL);
+
+   datetime GetNextStart();
+   datetime GetStart();
+   datetime GetEnd();
 
    string GetDrawingName(void);
       
 public:
-   CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession, SESSION_TZ session);
+   CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, SESSION_TZ session, int startDay, int endDay);
    
    ~CSession();
    
@@ -55,7 +64,7 @@ public:
    void Process(datetime dtCurrent, double open, double high, double low, double close);
 };
 
-CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession, SESSION_TZ sessionTz)
+CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, SESSION_TZ sessionTz, int startDay, int endDay)
 {
    _sessionTz = sessionTz;
    _maxHistoricalSessions = maxHistoricalSessions;
@@ -63,6 +72,9 @@ CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessi
    _name = name;
    _clr = clr;
    _showNextSession = showNextSession;
+   _isVisible = isVisible;
+   _startDay = startDay;
+   _endDay = endDay;
    
    _sessions = new CQueue<CSessionRange*>();
 }
@@ -96,14 +108,19 @@ void CSession::Initialize(int startHour, int startMin, int endHour, int endMin, 
    // Convert start to hours and minutes (it is not truly a fractional but a representation of the minutes)
    _startHourInSeconds = ((int)startHour * 60 * 60) + startMin * 60;
    _startHourInSeconds -= adjustment;
+
+   // handle when time crosses midnight, i.e. 2300 - 0700
+   if (endHour < startHour)
+   {
+      _durationInSeconds = (((24 - startHour) + endHour) * 60 - startMin + endMin) * 60;
+   }
+   else
+   {
+      _durationInSeconds = ((endHour - startHour) * 60 - startMin + endMin) * 60;
+   }
    
-   _endHourInSeconds = ((int)endHour * 60 * 60) + endMin * 60;
-   _endHourInSeconds -= adjustment;
-   
-   if (_endHourInSeconds < 0) _endHourInSeconds = _endHourInSeconds + (24*60*60);
-   
-   PrintFormat("Initializing Session %f-%f Resulting Server Times From %f to %f, Offsets [Sess=%i, Server=%i], Resulting Adjustment [%i]",
-      startHour, endHour, _startHourInSeconds, _endHourInSeconds, sessionSecondsOffsetTz, serverSecondsOffsetTz, adjustment);
+   PrintFormat("Initializing Session %f-%f Resulting Server Times Starting %i, Duration %i, Offsets [Sess=%i, Server=%i], Resulting Adjustment [%i]",
+      startHour, endHour, _startHourInSeconds, _durationInSeconds, sessionSecondsOffsetTz, serverSecondsOffsetTz, adjustment);
    
    _start = NULL;
 }
@@ -117,7 +134,7 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
 
       // draw the start of the next session - this will be moved during the creation of a session as needed
       if (_showNextSession)
-         CDrawingHelpers::VLineCreate(0, GetDrawingName(), _name, 0, _start, _clr, STYLE_DOT, 1, true, false, true, true);
+         CDrawingHelpers::VLineCreate(0, GetDrawingName(), _name, 0, GetStart(), _clr, STYLE_DOT, 1, true, false, true, true);
    }
 
    // Ignore any time that isn't in current session
@@ -128,16 +145,9 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
    //  - Set current session to "NEW SESSION"   
    if (_currentSession == NULL && inSession)
    {
-      _currentSession = new CSessionRange(_prefix, _name, _start, _end, high, low, _clr);
+      _currentSession = new CSessionRange(_prefix, _name, GetStart(), GetEnd(), high, low, _isVisible, _clr);
       
-      // move to the next session (if enabled)
-      if (_showNextSession)
-      {
-         datetime start, end;
-         bool isDaylightSavingsTime;
-         GetNextSessionTimes(_start, start, end, isDaylightSavingsTime);
-         CDrawingHelpers::VLineMove(0, GetDrawingName(), start);
-      }
+      if (_showNextSession) CDrawingHelpers::VLineMove(0, GetDrawingName(), GetNextStart());
    }
    else if (_currentSession != NULL && !inSession)
    {
@@ -162,7 +172,7 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
    if (state == DUR_AFTER) MoveToNextSession();
 }
 
-void CSession::GetSessionTimes(datetime date, datetime &start, datetime &end, bool &isDaylightSavingsTime)
+datetime CSession::GetSessionStart(datetime date, int startTimeInSeconds)
 {
    MqlDateTime sDate;
    TimeToStruct(date, sDate);
@@ -171,44 +181,69 @@ void CSession::GetSessionTimes(datetime date, datetime &start, datetime &end, bo
    sDate.min = 0;
    sDate.sec = 0;
 
-   isDaylightSavingsTime = CCalendarHelpers::IsInDaylightSavingsTime(_sessionTz, date);
-   int daylightSavingsTimeOffset = ((isDaylightSavingsTime) ? 60*60 : 0);
-   
-   start = StructToTime(sDate) + _startHourInSeconds + daylightSavingsTimeOffset;
-   end = start + (_endHourInSeconds - _startHourInSeconds);
-
-   if (_startHourInSeconds > _endHourInSeconds)
-      end = end + (24 * 60 * 60);
+   return StructToTime(sDate) + startTimeInSeconds;
 }
 
-void CSession::GetNextSessionTimes(datetime date, datetime &start, datetime &end, bool &isDaylightSavingsTime)
+datetime CSession::GetNextSessionStart(datetime date)
 {
    MqlDateTime sDate;
    TimeToStruct(date, sDate);
-   int daysToIncrement = (sDate.day_of_week != 5) ? 1 : 3;
-
+   
    CDateTime dt;
    dt.DateTime(date);
-   dt.DayInc(daysToIncrement);
 
-   GetSessionTimes(dt.DateTime(), start, end, isDaylightSavingsTime);
+   // failsafe to ensure we don't loop forever
+   int count = 7;
+
+   do
+   {
+      dt.DayInc(1);
+   } while ((dt.day_of_week < _startDay || dt.day_of_week > _endDay) && (count-- > 0));
+
+   return GetSessionStart(dt.DateTime(), _startHourInSeconds);
 }
 
 void CSession::MoveToNextSession(datetime now = NULL)
 {
-   bool isDaylightSavingsTime;
-   GetNextSessionTimes((now != NULL) ? now : _start, _start, _end, isDaylightSavingsTime);
+   datetime originalStart = _start;
 
-   PrintFormat("Moved to Next Session [%s] Created [%s - %s] based on Input Date [%s], Adjusted for Daylight Savings Time? %i",
-      _name, TimeToString(_start), TimeToString(_end), TimeToString(now), isDaylightSavingsTime);
+   _start = GetNextSessionStart((now != NULL) ? now : _start);
+
+   PrintFormat("Moved to Next Session [%s] from [%s] Created [%s - %s] based on Input Date [%s]",
+      _name, TimeToString(originalStart), TimeToString(GetStart()), TimeToString(GetEnd()), TimeToString(now));
 }
 
 bool CSession::IsInSession(datetime date, DUR &state)
 {
    state = DUR_DURING;
 
-   if (date > _end) state = DUR_AFTER;
-   if (_start > date) state = DUR_BEFORE;
+   if (date > GetEnd()) state = DUR_AFTER;
+   if (GetStart() > date) state = DUR_BEFORE;
 
    return (state == DUR_DURING);
+}
+
+datetime CSession::GetNextStart()
+{
+   datetime start = GetNextSessionStart(_start);
+
+   // adjust for daylight savings
+   bool isDaylightSavingsTime = CCalendarHelpers::IsInDaylightSavingsTime(_sessionTz, start);
+   int daylightSavingsTimeOffset = ((isDaylightSavingsTime) ? 60*60 : 0);
+
+   return start + daylightSavingsTimeOffset;
+}
+
+datetime CSession::GetStart()
+{
+   // adjust for daylight savings
+   bool isDaylightSavingsTime = CCalendarHelpers::IsInDaylightSavingsTime(_sessionTz, _start);
+   int daylightSavingsTimeOffset = ((isDaylightSavingsTime) ? 60*60 : 0);
+
+   return _start + daylightSavingsTimeOffset;
+}
+
+datetime CSession::GetEnd()
+{
+   return GetStart() + _durationInSeconds;
 }

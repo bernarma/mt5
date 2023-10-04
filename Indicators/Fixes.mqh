@@ -25,7 +25,7 @@ public:
    CFixes(string prefix, int maxHistoricalFixesToShow, int offset, int serverOffset);
    ~CFixes();
    
-   void CreateFix(string name, int hour, int min, int tzSeconds, SESSION_TZ session, color clr, ENUM_LINE_STYLE style);
+   void CreateFix(string name, int hourUTC, int minUTC, SESSION_TZ session, color clr, ENUM_LINE_STYLE style);
    void Handle(datetime time, double open);
    
 };
@@ -53,9 +53,9 @@ CFixes::~CFixes()
    delete _fixes;
 }
 
-void CFixes::CreateFix(string name, int hour, int min, int tzSeconds, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
+void CFixes::CreateFix(string name, int hourUTC, int minUTC, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
 {
-   CFix *fix = new CFix(_prefix, name, hour, min, tzSeconds, _maxFixes, _drawingOffset, _serverOffset, session, clr, style);
+   CFix *fix = new CFix(_prefix, name, hourUTC, minUTC, _maxFixes, _drawingOffset, _serverOffset, session, clr, style);
    _fixes.Add(fix);
 }
 

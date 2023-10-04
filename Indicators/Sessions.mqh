@@ -24,8 +24,8 @@ public:
    ~CSessions();
    
    void CreateSession(
-      string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession,
-      int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session);
+      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession,
+      int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session, int startDay, int endDay);
       
    bool IsInSession(datetime time);
    
@@ -53,10 +53,10 @@ CSessions::~CSessions()
 }
 
 void CSessions::CreateSession(
-   string prefix, string name, color clr, int maxHistoricalSessions, bool showNextSession, int startHour, int startMin,
-   int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session)
+   string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
+   int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session, int startDay, int endDay)
 {
-   CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, showNextSession, session);
+   CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, session, startDay, endDay);
    s.Initialize(startHour, startMin, endHour, endMin, sessionSecondsOffsetTz, _serverSecondsOffsetTz);
    _sessions.Add(s);
 }

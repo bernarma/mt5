@@ -42,7 +42,7 @@ CHistoricalFix::CHistoricalFix(string prefix, string name, datetime date, double
    _price = price;
    _clr = clr;
    _style = style;
-   _offset = offset; //6000;
+   _offset = offset;
 }
 
 CHistoricalFix::~CHistoricalFix()
