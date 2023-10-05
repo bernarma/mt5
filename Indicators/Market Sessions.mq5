@@ -170,7 +170,8 @@ int OnCalculate(const int rates_total,
    int candlesPerDay = secondsPerDay / secondsPerPeriod;
    
    //--- Only calculate a max number of historical sessions based on user input
-   int start = MathMax(rates_total - (InpMaxHistoricalSessionsToShow * candlesPerDay) - 1, prev_calculated - 1);
+   int start = MathMax(rates_total - (InpMaxHistoricalSessionsToShow * candlesPerDay), prev_calculated);
+   if (start > 0) start--;
 
    //--- Loop through the periods in the window except the last candle (which is the active one)
    for(int i = start; i < rates_total && !IsStopped(); i++)
