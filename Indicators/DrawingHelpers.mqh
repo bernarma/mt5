@@ -119,6 +119,7 @@ public:
    static bool VLineDelete(const long   chart_ID=0,
                     const string name="VLine");
 
+   static int PeriodToVisibility(ENUM_TIMEFRAMES VisibilityPeriod);
 };
 
 CDrawingHelpers::CDrawingHelpers()
@@ -487,4 +488,19 @@ bool CDrawingHelpers::VLineDelete(const long   chart_ID=0,
    }
    
    return(true);
+}
+
+int CDrawingHelpers::PeriodToVisibility(ENUM_TIMEFRAMES VisibilityPeriod)
+{
+   int i;
+   int periods[]    = { PERIOD_M1, PERIOD_M2, PERIOD_M3, PERIOD_M4, PERIOD_M5, PERIOD_M6, PERIOD_M10, PERIOD_M12, PERIOD_M15, PERIOD_M20, PERIOD_M30, PERIOD_H1, PERIOD_H2, PERIOD_H3, PERIOD_H4, PERIOD_H6, PERIOD_H8, PERIOD_H12, PERIOD_D1, PERIOD_W1, PERIOD_MN1};
+   int visibility[] = { OBJ_PERIOD_M1, OBJ_PERIOD_M2, OBJ_PERIOD_M3, OBJ_PERIOD_M4, OBJ_PERIOD_M5, OBJ_PERIOD_M6, OBJ_PERIOD_M10, OBJ_PERIOD_M12, OBJ_PERIOD_M15, OBJ_PERIOD_M20, OBJ_PERIOD_M30, OBJ_PERIOD_H1, OBJ_PERIOD_H2, OBJ_PERIOD_H3, OBJ_PERIOD_H4, OBJ_PERIOD_H6, OBJ_PERIOD_H8, OBJ_PERIOD_H12, OBJ_PERIOD_D1, OBJ_PERIOD_W1, OBJ_PERIOD_MN1};
+   if (VisibilityPeriod == PERIOD_CURRENT)
+      VisibilityPeriod = Period();
+
+   for (i = 0; i < 21; i++)
+      if (VisibilityPeriod == periods[i])
+         break;
+
+   return(visibility[i]);
 }

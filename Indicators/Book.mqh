@@ -42,7 +42,7 @@ public:
    CBook(string prefix, int offset, BOOK_TYPE type, datetime time, double price, datetime expiration, color clr);
    ~CBook();
    
-   bool Hide();
+   void Show(bool isVisible);
    
    bool IsComplete(datetime current, double price, BOOK_STATE &state);
 
@@ -98,9 +98,13 @@ void CBook::Update(datetime now, double price, int level)
    }
 }
 
-bool CBook::Hide()
+void CBook::Show(bool isVisible)
 {
-   return false;
+   int visibility = CDrawingHelpers::PeriodToVisibility(Period());
+   int objTimeframes = (isVisible) ? visibility: OBJ_NO_PERIODS;
+
+   ObjectSetInteger(0, GetDrawingNameLevel(), OBJPROP_TIMEFRAMES, objTimeframes);
+   ObjectSetInteger(0, GetDrawingNameLabel(), OBJPROP_TIMEFRAMES, objTimeframes);
 }
 
 bool CBook::IsComplete(datetime current, double price, BOOK_STATE &state)

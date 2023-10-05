@@ -30,6 +30,7 @@ private:
    CArrayList<CBook *> *_bearLvArr;
    CArrayList<CBook *> *_bullLvArr;
    
+   int _maxLevelsToShow;
    int _lookbackPeriod;
    int _maxBearCDLookback;
    datetime _lastHandledPeriod;
@@ -53,7 +54,7 @@ private:
    void Initialize(datetime time);
 
 public:
-   CBooks(string prefix, int offset, bool filterInSession, CSessions *sessions, int lookbackPeriod, color bearLvl, color bullLvl);
+   CBooks(string prefix, int offset, int maxLevelsToShow, bool filterInSession, CSessions *sessions, int lookbackPeriod, color bearLvl, color bullLvl);
    ~CBooks();
    
    DIR CurrentBias();
@@ -61,7 +62,7 @@ public:
    void ProcessTime(int current, int total, const datetime &time[], const double &open[], const double &high[], const double &low[], const double &close[]);
 };
   
-CBooks::CBooks(string prefix, int offset, bool filterInSession, CSessions *sessions, int lookbackPeriod, color bearLvl, color bullLvl)
+CBooks::CBooks(string prefix, int offset, int maxLevelsToShow, bool filterInSession, CSessions *sessions, int lookbackPeriod, color bearLvl, color bullLvl)
 {
    _offset = offset;
    _prefix = prefix;
@@ -72,6 +73,7 @@ CBooks::CBooks(string prefix, int offset, bool filterInSession, CSessions *sessi
    _bias = DIR_NONE;
    _clrBearLevel = bearLvl;
    _clrBullLevel = bullLvl;
+   _maxLevelsToShow = maxLevelsToShow;
    
    _bearLvArr = new CArrayList<CBook*>();
    _bullLvArr = new CArrayList<CBook*>();
@@ -210,11 +212,18 @@ void CBooks::CleanBooks(CArrayList<CBook *> *bookArr, datetime time, double pric
             bookArr.Remove(book);
             delete book;
          }
-         else
-         {
-            // PrintFormat("Updating Book - %s, State=%i", book.ToString(), state);
-            book.Update(time, price, i);
-         }
+      }
+   }
+
+   // we are now left with all active books after we removed expired and used
+   int threshold = bookArr.Count() - _maxLevelsToShow;
+   for (int i = bookArr.Count(); i > 0; i--)
+   {
+      if (bookArr.TryGetValue(i-1, book))
+      {
+         // PrintFormat("Updating Book - %s, State=%i", book.ToString(), state);
+         book.Update(time, price, i);
+         book.Show(i > threshold);
       }
    }
 }
