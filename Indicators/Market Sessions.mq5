@@ -35,7 +35,7 @@ input DAY_OF_WEEK InpSession1StartDay = DAY_OF_WEEK_SUNDAY; // Session 1 Start D
 input DAY_OF_WEEK InpSession1EndDay = DAY_OF_WEEK_THURSDAY; // Session 1 End Day
 input int InpSession1StartHour = 20; // Session 1 Time (Start Hour)
 input int InpSession1StartMin = 0; // Session 1 Time (Start Min)
-input int InpSession1EndHour = 2; // Session 1 Time (End Hour)
+input int InpSession1EndHour = 5; // Session 1 Time (End Hour)
 input int InpSession1EndMin = 0; // Session 1 Time (End Min)
 
 input bool InpShowSession2 = true; // Show Session 2
@@ -45,9 +45,9 @@ input SESSION_TZ InpSession2Type = SESSION_TZ_ASIA; // Session 2 Type
 input color InpSession2Color = clrAntiqueWhite; // Session 2 Color
 input DAY_OF_WEEK InpSession2StartDay = DAY_OF_WEEK_SUNDAY; // Session 2 Start Day
 input DAY_OF_WEEK InpSession2EndDay = DAY_OF_WEEK_THURSDAY; // Session 2 End Day
-input int InpSession2StartHour = 23; // Session 2 Time (Start Hour)
-input int InpSession2StartMin = 30; // Session 2 Time (Start Min)
-input int InpSession2EndHour = 2; // Session 2 Time (End Hour)
+input int InpSession2StartHour = 0; // Session 2 Time (Start Hour)
+input int InpSession2StartMin = 0; // Session 2 Time (Start Min)
+input int InpSession2EndHour = 9; // Session 2 Time (End Hour)
 input int InpSession2EndMin = 0; // Session 2 Time (End Min)
 
 input bool InpShowSession3 = true; // Show Session 3
@@ -57,9 +57,9 @@ input SESSION_TZ InpSession3Type = SESSION_TZ_LONDON; // Session 3 Type
 input DAY_OF_WEEK InpSession3StartDay = DAY_OF_WEEK_MONDAY; // Session 3 Start Day
 input DAY_OF_WEEK InpSession3EndDay = DAY_OF_WEEK_FRIDAY; // Session 3 End Day
 input color InpSession3Color = clrGold; // Session 3 Color
-input int InpSession3StartHour = 5; // Session 3 Time (Start Hour)
-input int InpSession3StartMin = 30; // Session 3 Time (Start Min)
-input int InpSession3EndHour = 8; // Session 3 Time (End Hour)
+input int InpSession3StartHour = 7; // Session 3 Time (Start Hour)
+input int InpSession3StartMin = 0; // Session 3 Time (Start Min)
+input int InpSession3EndHour = 16; // Session 3 Time (End Hour)
 input int InpSession3EndMin = 0; // Session 3 Time (End Min)
 
 input bool InpShowSession4 = true; // Show Session 4
@@ -69,10 +69,10 @@ input SESSION_TZ InpSession4Type = SESSION_TZ_NEWYORK; // Session 4 Type
 input DAY_OF_WEEK InpSession4StartDay = DAY_OF_WEEK_MONDAY; // Session 4 Start Day
 input DAY_OF_WEEK InpSession4EndDay = DAY_OF_WEEK_FRIDAY; // Session 4 End Day
 input color InpSession4Color = clrLimeGreen; // Session 4 Color
-input int InpSession4StartHour = 11; // Session 4 Time (Start Hour)
+input int InpSession4StartHour = 12; // Session 4 Time (Start Hour)
 input int InpSession4StartMin = 0; // Session 4 Time (Start Min)
-input int InpSession4EndHour = 13; // Session 4 Time (End Hour)
-input int InpSession4EndMin = 30; // Session 4 Time (End Min)
+input int InpSession4EndHour = 21; // Session 4 Time (End Hour)
+input int InpSession4EndMin = 0; // Session 4 Time (End Min)
 
 CSessions *g_Sessions;
 

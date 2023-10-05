@@ -119,8 +119,8 @@ void CSession::Initialize(int startHour, int startMin, int endHour, int endMin, 
       _durationInSeconds = ((endHour - startHour) * 60 - startMin + endMin) * 60;
    }
    
-   PrintFormat("Initializing Session %f-%f Resulting Server Times Starting %i, Duration %i, Offsets [Sess=%i, Server=%i], Resulting Adjustment [%i]",
-      startHour, endHour, _startHourInSeconds, _durationInSeconds, sessionSecondsOffsetTz, serverSecondsOffsetTz, adjustment);
+   PrintFormat("Initializing Session [%s] %f-%f Resulting Server Times Starting %i, Duration %i, Resulting Adjustment [%i]",
+      _name, startHour, endHour, _startHourInSeconds, _durationInSeconds, adjustment);
    
    _start = NULL;
 }
@@ -147,7 +147,12 @@ void CSession::Process(datetime dtCurrent, double open, double high, double low,
    {
       _currentSession = new CSessionRange(_prefix, _name, GetStart(), GetEnd(), high, low, _isVisible, _clr);
       
-      if (_showNextSession) CDrawingHelpers::VLineMove(0, GetDrawingName(), GetNextStart());
+      if (_showNextSession)
+      {
+         datetime nextStart = GetNextStart();
+         //PrintFormat("Moving Session [%s] Start to %s", _name, TimeToString(nextStart));
+         CDrawingHelpers::VLineMove(0, GetDrawingName(), nextStart);
+      }
    }
    else if (_currentSession != NULL && !inSession)
    {
@@ -209,8 +214,8 @@ void CSession::MoveToNextSession(datetime now = NULL)
 
    _start = GetNextSessionStart((now != NULL) ? now : _start);
 
-   PrintFormat("Moved to Next Session [%s] from [%s] Created [%s - %s] based on Input Date [%s]",
-      _name, TimeToString(originalStart), TimeToString(GetStart()), TimeToString(GetEnd()), TimeToString(now));
+   //PrintFormat("Moved to Next Session [%s] from [%s] Created [%s - %s] based on Input Date [%s]",
+   //   _name, TimeToString(originalStart), TimeToString(GetStart()), TimeToString(GetEnd()), TimeToString(now));
 }
 
 bool CSession::IsInSession(datetime date, DUR &state)
