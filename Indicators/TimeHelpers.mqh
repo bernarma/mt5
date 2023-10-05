@@ -29,6 +29,8 @@ public:
    static bool IsBearCandle(const double open, const double high, const double low, const double close);
    static bool IsNeutralCandle(const double open, const double high, const double low, const double close);
 
+   static int ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds);
+
    static int GetTimeframeMinutes(ENUM_TIMEFRAMES timeframe);
 };
 
@@ -38,6 +40,14 @@ CTimeHelpers::CTimeHelpers()
 
 CTimeHelpers::~CTimeHelpers()
 {
+}
+
+int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds)
+{
+   int localHour = hour - tzHour;
+   int localMin = min - tzMin;
+
+   return ((localHour * 60) + localMin) * 60 + serverOffsetSeconds;
 }
 
 DIR CTimeHelpers::CandleDir(const double open, const double high, const double low, const double close)

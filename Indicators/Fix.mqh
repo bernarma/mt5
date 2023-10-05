@@ -21,7 +21,7 @@ private:
    
    int _drawingOffset;
    int _maxHistoricalFixesToShow;
-   int _secondsFromMidnight;
+   int _fixInSeconds;
    
    CLinkedList<CHistoricalFix *> *_historicalFixes;
    
@@ -32,19 +32,21 @@ private:
    SESSION_TZ _session;
       
 public:
-   CFix(string prefix, string name, int hourUTC, int minUTC, int maxHistoricalFixesToShow,
-        int drawingOffset, int serverOffset, SESSION_TZ session, color clr, ENUM_LINE_STYLE style);
+   CFix(string prefix, string name, int fixInSeconds, int maxHistoricalFixesToShow,
+           int drawingOffset, SESSION_TZ session, color clr, ENUM_LINE_STYLE style);
 
    ~CFix();
    
+   string ToString();
+
    void Handle(datetime time, double price);
 
    bool IsInRange(datetime dtCurrent);
 
 };
 
-CFix::CFix(string prefix, string name, int hourUTC, int minUTC, int maxHistoricalFixesToShow,
-           int drawingOffset, int serverOffset, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
+CFix::CFix(string prefix, string name, int fixInSeconds, int maxHistoricalFixesToShow,
+           int drawingOffset, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
 {
    _prefix = prefix;
    _name = name;
@@ -53,7 +55,8 @@ CFix::CFix(string prefix, string name, int hourUTC, int minUTC, int maxHistorica
    _drawingOffset = drawingOffset;
    _session = session;
 
-   _secondsFromMidnight = (((hourUTC * 60) + minUTC) * 60) + serverOffset;
+   _fixInSeconds = fixInSeconds;
+   //_secondsFromMidnight = (((hourUTC * 60) + minUTC) * 60) + serverOffset;
    
    _maxHistoricalFixesToShow = maxHistoricalFixesToShow;
    
@@ -72,6 +75,12 @@ CFix::~CFix()
    delete _historicalFixes;
 }
 
+string CFix::ToString()
+{
+   datetime d = _fixInSeconds;
+   return StringFormat("%s - %s", _name, TimeToString(d));
+}
+
 bool CFix::IsInRange(datetime dtCurrent)
 {
    // Initialise using the current date as the start of the session window
@@ -88,7 +97,8 @@ bool CFix::IsInRange(datetime dtCurrent)
 
    bool isDaylightSavingsTime = CCalendarHelpers::IsInDaylightSavingsTime(_session, dtCurrent);
    int daylightSavingsTimeOffset = ((isDaylightSavingsTime) ? 60*60 : 0);
-   datetime dtFix = StructToTime(sToday) + _secondsFromMidnight + daylightSavingsTimeOffset;
+
+   datetime dtFix = StructToTime(sToday) + _fixInSeconds - daylightSavingsTimeOffset;
 
    //PrintFormat("Initialized [%s] Fix %s",
       //_name, TimeToString(StructToTime(_startTime)));
@@ -104,7 +114,7 @@ void CFix::Handle(datetime time, double price)
       CHistoricalFix *historicalFix = new CHistoricalFix(_prefix, _name, time, price, _drawingOffset, _clr, _style);
       historicalFix.Initialize();
       _historicalFixes.Add(historicalFix);
-      //PrintFormat("Creating Historical Fix %s", historicalFix.GetName());
+      PrintFormat("Creating Historical Fix %s based off Fix %s", historicalFix.GetName(), ToString());
       
       if (_historicalFixes.Count() > _maxHistoricalFixesToShow)
       {

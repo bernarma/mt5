@@ -8,6 +8,8 @@
 #property version   "1.00"
 
 #include <Generic\ArrayList.mqh>
+
+#include "TimeHelpers.mqh"
 #include "Fix.mqh"
 
 class CFixes
@@ -55,8 +57,12 @@ CFixes::~CFixes()
 
 void CFixes::CreateFix(string name, int hourUTC, int minUTC, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
 {
-   CFix *fix = new CFix(_prefix, name, hourUTC, minUTC, _maxFixes, _drawingOffset, _serverOffset, session, clr, style);
+   int fixInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(hourUTC, minUTC, 0, 0, _serverOffset);
+
+   CFix *fix = new CFix(_prefix, name, fixInSeconds, _maxFixes, _drawingOffset, session, clr, style);
    _fixes.Add(fix);
+
+   //PrintFormat("Fix Created [%s]", fix.ToString());
 }
 
 void CFixes::Handle(datetime time, double open)
