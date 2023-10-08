@@ -1,11 +1,17 @@
-//+------------------------------------------------------------------+
-//|                                                         Book.mqh |
-//|                                 Copyright 2023, Mark Bernardinis |
-//|                                   https://www.mtnsconsulting.com |
-//+------------------------------------------------------------------+
-#property copyright "Copyright 2023, Mark Bernardinis"
-#property link      "https://www.mtnsconsulting.com"
-#property version   "1.00"
+//+-----------------------------------------------------------------------------+
+//| This program is free software: you can redistribute it and/or modify        |
+//| it under the terms of the GNU Affero General Public License as published by |
+//| the Free Software Foundation, either version 3 of the License, or           |
+//| (at your option) any later version.                                         |
+//|                                                                             |
+//| This program is distributed in the hope that it will be useful,             |
+//| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+//| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+//| GNU Affero General Public License for more details.                         |
+//|                                                                             |
+//| You should have received a copy of the GNU Affero General Public License    |
+//| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+//+-----------------------------------------------------------------------------+
 
 #include <Generic\Interfaces\IEqualityComparable.mqh>
 
@@ -82,6 +88,11 @@ CBook::~CBook()
 
 void CBook::Update(datetime now, double price, int level)
 {
+   ObjectMove(0, GetDrawingNameLevel(), 1, now + _offset, _price);
+   ObjectSetString(0, GetDrawingNameLabel(), OBJPROP_TEXT, StringFormat("%i", level));
+   ObjectMove(0, GetDrawingNameLabel(), 0, now + _offset + 50, _price);
+
+   /* DEBUG STATEMENTS
    if(!ObjectMove(0, GetDrawingNameLevel(), 1, now + _offset, _price))
    {
        Print(__FUNCTION__, ": failed to move the BOOK LEVEL! Error code = ",GetLastError());
@@ -96,6 +107,7 @@ void CBook::Update(datetime now, double price, int level)
    {
        Print(__FUNCTION__, ": failed to move the BOOK LEVEL LABEL! Error code = ",GetLastError());
    }
+   */
 }
 
 void CBook::Show(bool isVisible)

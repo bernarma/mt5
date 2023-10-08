@@ -1,16 +1,28 @@
-//+------------------------------------------------------------------+
-//|                                              Market Sessions.mq5 |
-//|                                 Copyright 2023, Mark Bernardinis |
-//|                                   https://www.mtnsconsulting.com |
-//+------------------------------------------------------------------+
+//+-----------------------------------------------------------------------------+
+//| This program is free software: you can redistribute it and/or modify        |
+//| it under the terms of the GNU Affero General Public License as published by |
+//| the Free Software Foundation, either version 3 of the License, or           |
+//| (at your option) any later version.                                         |
+//|                                                                             |
+//| This program is distributed in the hope that it will be useful,             |
+//| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+//| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+//| GNU Affero General Public License for more details.                         |
+//|                                                                             |
+//| You should have received a copy of the GNU Affero General Public License    |
+//| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+//+-----------------------------------------------------------------------------+
+
 #property copyright "Copyright 2023, Mark Bernardinis"
-#property link      "https://www.mtnsconsulting.com"
+#property link      "https://github.com/bernarma/mt5"
 #property version   "1.1"
+
 #property indicator_chart_window
 
 #property indicator_plots   0
 
 #include "CalendarHelpers.mqh"
+#include "TimeHelpers.mqh"
 #include "DrawingHelpers.mqh"
 
 #include "Sessions.mqh"
@@ -43,8 +55,8 @@ input bool InpShowNextSession2 = true; // Show Next Session 2
 input string InpSession2Name = "Asia"; // Session 2 Name
 input SESSION_TZ InpSession2Type = SESSION_TZ_ASIA; // Session 2 Type
 input color InpSession2Color = clrAntiqueWhite; // Session 2 Color
-input DAY_OF_WEEK InpSession2StartDay = DAY_OF_WEEK_SUNDAY; // Session 2 Start Day
-input DAY_OF_WEEK InpSession2EndDay = DAY_OF_WEEK_THURSDAY; // Session 2 End Day
+input DAY_OF_WEEK InpSession2StartDay = DAY_OF_WEEK_MONDAY; // Session 2 Start Day
+input DAY_OF_WEEK InpSession2EndDay = DAY_OF_WEEK_FRIDAY; // Session 2 End Day
 input int InpSession2StartHour = 0; // Session 2 Time (Start Hour)
 input int InpSession2StartMin = 0; // Session 2 Time (Start Min)
 input int InpSession2EndHour = 9; // Session 2 Time (End Hour)
@@ -95,19 +107,19 @@ void Initialize(datetime dt)
 
    g_Sessions.CreateSession(
       INDICATOR_SHORT_NAME, InpSession1Name, InpSession1Color, InpMaxHistoricalSessionsToShow, InpShowSession1, InpShowNextSession1, InpSession1StartHour,
-      InpSession1StartMin, InpSession1EndHour, InpSession1EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession1Type, InpSession1StartDay, InpSession1EndDay);
+      InpSession1StartMin, InpSession1EndHour, InpSession1EndMin, InpSessionTimeZonesHour, InpSessionTimeZonesMin, InpSession1Type, InpSession1StartDay, InpSession1EndDay);
    
    g_Sessions.CreateSession(
       INDICATOR_SHORT_NAME, InpSession2Name, InpSession2Color, InpMaxHistoricalSessionsToShow, InpShowSession2, InpShowNextSession2, InpSession2StartHour,
-      InpSession2StartMin, InpSession2EndHour, InpSession2EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession2Type, InpSession2StartDay, InpSession2EndDay);
+      InpSession2StartMin, InpSession2EndHour, InpSession2EndMin, InpSessionTimeZonesHour, InpSessionTimeZonesMin, InpSession2Type, InpSession2StartDay, InpSession2EndDay);
 
    g_Sessions.CreateSession(
       INDICATOR_SHORT_NAME, InpSession3Name, InpSession3Color, InpMaxHistoricalSessionsToShow, InpShowSession3, InpShowNextSession3, InpSession3StartHour,
-      InpSession3StartMin, InpSession3EndHour, InpSession3EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession3Type, InpSession3StartDay, InpSession3EndDay);
+      InpSession3StartMin, InpSession3EndHour, InpSession3EndMin, InpSessionTimeZonesHour, InpSessionTimeZonesMin, InpSession3Type, InpSession3StartDay, InpSession3EndDay);
 
    g_Sessions.CreateSession(
       INDICATOR_SHORT_NAME, InpSession4Name, InpSession4Color, InpMaxHistoricalSessionsToShow, InpShowSession4, InpShowNextSession4, InpSession4StartHour,
-      InpSession4StartMin, InpSession4EndHour, InpSession4EndMin, (InpSessionTimeZonesHour*60*60 + InpSessionTimeZonesMin*60), InpSession4Type, InpSession4StartDay, InpSession4EndDay);
+      InpSession4StartMin, InpSession4EndHour, InpSession4EndMin, InpSessionTimeZonesHour, InpSessionTimeZonesMin, InpSession4Type, InpSession4StartDay, InpSession4EndDay);
 
    PrintFormat("Initialised (Market Sessions)");
    

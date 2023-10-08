@@ -1,13 +1,21 @@
-//+------------------------------------------------------------------+
-//|                                                     sessions.mqh |
-//|                                 Copyright 2023, Mark Bernardinis |
-//|                                   https://www.mtnsconsulting.com |
-//+------------------------------------------------------------------+
-#property copyright "Copyright 2023, Mark Bernardinis"
-#property link      "https://www.mtnsconsulting.com"
-#property version   "1.00"
+//+-----------------------------------------------------------------------------+
+//| This program is free software: you can redistribute it and/or modify        |
+//| it under the terms of the GNU Affero General Public License as published by |
+//| the Free Software Foundation, either version 3 of the License, or           |
+//| (at your option) any later version.                                         |
+//|                                                                             |
+//| This program is distributed in the hope that it will be useful,             |
+//| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+//| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+//| GNU Affero General Public License for more details.                         |
+//|                                                                             |
+//| You should have received a copy of the GNU Affero General Public License    |
+//| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+//+-----------------------------------------------------------------------------+
 
-#include "session.mqh"
+#include "Session.mqh"
+#include "TimeHelpers.mqh"
+
 #include <Generic\ArrayList.mqh>
 
 class CSessions
@@ -17,26 +25,30 @@ private:
 
    CArrayList<CSession *> *_sessions;
 
-   int _serverSecondsOffsetTz;
+   int _serverOffset;
 
 public:
-   CSessions(int serverSecondsOffsetTz);
+   CSessions(int serverOffset);
    ~CSessions();
    
    void CreateSession(
-      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession,
-      int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session, int startDay, int endDay);
+      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
+      int durationInMinutes, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay);
+
+   void CreateSession(
+      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
+      int endHour, int endMin, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay);
       
    bool IsInSession(datetime time);
    
    void ProcessTime(datetime time, double open, double high, double low, double close);
 };
 
-CSessions::CSessions(int serverSecondsOffsetTz)
+CSessions::CSessions(int serverOffset)
 {
    _sessions = new CArrayList<CSession *>();
 
-   _serverSecondsOffsetTz = serverSecondsOffsetTz;
+   _serverOffset = serverOffset;
 }
 
 CSessions::~CSessions()
@@ -54,11 +66,24 @@ CSessions::~CSessions()
 
 void CSessions::CreateSession(
    string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
-   int endHour, int endMin, int sessionSecondsOffsetTz, SESSION_TZ session, int startDay, int endDay)
+   int durationInMinutes, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay)
 {
-   CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, session, startDay, endDay);
-   s.Initialize(startHour, startMin, endHour, endMin, sessionSecondsOffsetTz, _serverSecondsOffsetTz);
+   // Convert startHour to local
+   int sessionStartInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(startHour, startMin, sessionTzHour, sessionTzMin, _serverOffset);
+
+   CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, session,
+                              startDay, endDay, sessionStartInSeconds, durationInMinutes * 60);
    _sessions.Add(s);
+}
+
+void CSessions::CreateSession(
+   string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
+   int endHour, int endMin, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay)
+{
+   int duration = CTimeHelpers::MinutesBetween(startHour, startMin, endHour, endMin);
+
+   CreateSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, startHour, startMin,
+      duration, sessionTzHour, sessionTzMin, session, startDay, endDay);
 }
 
 bool CSessions::IsInSession(datetime time)

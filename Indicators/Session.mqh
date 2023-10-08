@@ -1,17 +1,24 @@
-//+------------------------------------------------------------------+
-//|                                                      session.mqh |
-//|                                 Copyright 2023, Mark Bernardinis |
-//|                                   https://www.mtnsconsulting.com |
-//+------------------------------------------------------------------+
-#property copyright "Copyright 2023, Mark Bernardinis"
-#property link      "https://www.mtnsconsulting.com"
-#property version   "1.00"
+//+-----------------------------------------------------------------------------+
+//| This program is free software: you can redistribute it and/or modify        |
+//| it under the terms of the GNU Affero General Public License as published by |
+//| the Free Software Foundation, either version 3 of the License, or           |
+//| (at your option) any later version.                                         |
+//|                                                                             |
+//| This program is distributed in the hope that it will be useful,             |
+//| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+//| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+//| GNU Affero General Public License for more details.                         |
+//|                                                                             |
+//| You should have received a copy of the GNU Affero General Public License    |
+//| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+//+-----------------------------------------------------------------------------+
+
+#include <Generic\Queue.mqh>
+#include <Tools\DateTime.mqh>
 
 #include "CalendarHelpers.mqh"
 #include "DrawingHelpers.mqh"
 #include "SessionRange.mqh"
-#include <Generic\Queue.mqh>
-#include <Tools\DateTime.mqh>
 
 enum DUR {
    DUR_BEFORE = -1,
@@ -33,7 +40,7 @@ private:
 
    int _startDay;
    int _endDay;
-   int _startHourInSeconds;
+   int _startInSeconds;
    int _durationInSeconds;
 
    int _maxHistoricalSessions;
@@ -53,18 +60,20 @@ private:
    string GetDrawingName(void);
       
 public:
-   CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, SESSION_TZ session, int startDay, int endDay);
+   CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible,
+                   bool showNextSession, SESSION_TZ sessionTz, int startDay, int endDay,
+                   int sessionStartInSeconds, int durationInSeconds);
    
    ~CSession();
-   
-   void Initialize(int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz);
    
    bool IsInSession(datetime dtCurrent, DUR &state);
    
    void Process(datetime dtCurrent, double open, double high, double low, double close);
 };
 
-CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, SESSION_TZ sessionTz, int startDay, int endDay)
+CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible,
+                   bool showNextSession, SESSION_TZ sessionTz, int startDay, int endDay,
+                   int sessionStartInSeconds, int durationInSeconds)
 {
    _sessionTz = sessionTz;
    _maxHistoricalSessions = maxHistoricalSessions;
@@ -73,9 +82,14 @@ CSession::CSession(string prefix, string name, color clr, int maxHistoricalSessi
    _clr = clr;
    _showNextSession = showNextSession;
    _isVisible = isVisible;
+
    _startDay = startDay;
    _endDay = endDay;
+
+   _durationInSeconds = durationInSeconds;
+   _startInSeconds = sessionStartInSeconds;
    
+   _start = NULL;
    _sessions = new CQueue<CSessionRange*>();
 }
 
@@ -99,30 +113,6 @@ CSession::~CSession()
 string CSession::GetDrawingName(void)
 {
    return StringFormat("[%s]Sess_%s_NXT", _prefix, _name);
-}
-
-void CSession::Initialize(int startHour, int startMin, int endHour, int endMin, int sessionSecondsOffsetTz, int serverSecondsOffsetTz)
-{
-   int adjustment = (sessionSecondsOffsetTz - serverSecondsOffsetTz);
-   
-   // Convert start to hours and minutes (it is not truly a fractional but a representation of the minutes)
-   _startHourInSeconds = ((int)startHour * 60 * 60) + startMin * 60;
-   _startHourInSeconds -= adjustment;
-
-   // handle when time crosses midnight, i.e. 2300 - 0700
-   if (endHour < startHour)
-   {
-      _durationInSeconds = (((24 - startHour) + endHour) * 60 - startMin + endMin) * 60;
-   }
-   else
-   {
-      _durationInSeconds = ((endHour - startHour) * 60 - startMin + endMin) * 60;
-   }
-   
-   PrintFormat("Initializing Session [%s] %f-%f Resulting Server Times Starting %i, Duration %i, Resulting Adjustment [%i]",
-      _name, startHour, endHour, _startHourInSeconds, _durationInSeconds, adjustment);
-   
-   _start = NULL;
 }
 
 //--- Must be called in sequential order
@@ -205,7 +195,7 @@ datetime CSession::GetNextSessionStart(datetime date)
       dt.DayInc(1);
    } while ((dt.day_of_week < _startDay || dt.day_of_week > _endDay) && (count-- > 0));
 
-   return GetSessionStart(dt.DateTime(), _startHourInSeconds);
+   return GetSessionStart(dt.DateTime(), _startInSeconds);
 }
 
 void CSession::MoveToNextSession(datetime now = NULL)

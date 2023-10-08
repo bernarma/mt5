@@ -1,11 +1,17 @@
-//+------------------------------------------------------------------+
-//|                                                  TimeHelpers.mqh |
-//|                                 Copyright 2023, Mark Bernardinis |
-//|                                   https://www.mtnsconsulting.com |
-//+------------------------------------------------------------------+
-#property copyright "Copyright 2023, Mark Bernardinis"
-#property link      "https://www.mtnsconsulting.com"
-#property version   "1.00"
+//+-----------------------------------------------------------------------------+
+//| This program is free software: you can redistribute it and/or modify        |
+//| it under the terms of the GNU Affero General Public License as published by |
+//| the Free Software Foundation, either version 3 of the License, or           |
+//| (at your option) any later version.                                         |
+//|                                                                             |
+//| This program is distributed in the hope that it will be useful,             |
+//| but WITHOUT ANY WARRANTY; without even the implied warranty of              |
+//| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               |
+//| GNU Affero General Public License for more details.                         |
+//|                                                                             |
+//| You should have received a copy of the GNU Affero General Public License    |
+//| along with this program.  If not, see <http://www.gnu.org/licenses/>.       |
+//+-----------------------------------------------------------------------------+
 
 enum DIR {
    DIR_BULL = 1,
@@ -31,6 +37,8 @@ public:
 
    static int ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds);
 
+   static int MinutesBetween(int startHour, int startMin, int endHour, int endMin);
+
    static int GetTimeframeMinutes(ENUM_TIMEFRAMES timeframe);
 };
 
@@ -40,6 +48,23 @@ CTimeHelpers::CTimeHelpers()
 
 CTimeHelpers::~CTimeHelpers()
 {
+}
+
+int CTimeHelpers::MinutesBetween(int startHour, int startMin, int endHour, int endMin)
+{
+   int duration = 0;
+
+   // handle when time crosses midnight, i.e. 2300 - 0700
+   if (endHour < startHour)
+   {
+      duration = (((24 - startHour) + endHour) * 60 - startMin + endMin);
+   }
+   else
+   {
+      duration = ((endHour - startHour) * 60 - startMin + endMin);
+   }
+
+   return duration;
 }
 
 int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds)
