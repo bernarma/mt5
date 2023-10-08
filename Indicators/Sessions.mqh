@@ -32,12 +32,12 @@ public:
    ~CSessions();
    
    void CreateSession(
-      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
-      int durationInMinutes, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay);
+      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
+      int durationInMinutes, datetime sessionTz, SESSION_TZ session, int startDay, int endDay);
 
    void CreateSession(
-      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
-      int endHour, int endMin, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay);
+      string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
+      datetime end, datetime sessionTz, SESSION_TZ session, int startDay, int endDay);
       
    bool IsInSession(datetime time);
    
@@ -65,11 +65,11 @@ CSessions::~CSessions()
 }
 
 void CSessions::CreateSession(
-   string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
-   int durationInMinutes, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay)
+   string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
+   int durationInMinutes, datetime sessionTz, SESSION_TZ session, int startDay, int endDay)
 {
    // Convert startHour to local
-   int sessionStartInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(startHour, startMin, sessionTzHour, sessionTzMin, _serverOffset);
+   int sessionStartInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(start, sessionTz, _serverOffset);
 
    CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, session,
                               startDay, endDay, sessionStartInSeconds, durationInMinutes * 60);
@@ -77,13 +77,13 @@ void CSessions::CreateSession(
 }
 
 void CSessions::CreateSession(
-   string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, int startHour, int startMin,
-   int endHour, int endMin, int sessionTzHour, int sessionTzMin, SESSION_TZ session, int startDay, int endDay)
+   string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
+   datetime end, datetime sessionTz, SESSION_TZ session, int startDay, int endDay)
 {
-   int duration = CTimeHelpers::MinutesBetween(startHour, startMin, endHour, endMin);
+   int duration = CTimeHelpers::MinutesBetween(start, end);
 
-   CreateSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, startHour, startMin,
-      duration, sessionTzHour, sessionTzMin, session, startDay, endDay);
+   CreateSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, start,
+      duration, sessionTz, session, startDay, endDay);
 }
 
 bool CSessions::IsInSession(datetime time)

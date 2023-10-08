@@ -22,6 +22,7 @@ enum DIR {
 class CTimeHelpers
 {
 private:
+   static int ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds);
 
 public:
    CTimeHelpers();
@@ -35,9 +36,11 @@ public:
    static bool IsBearCandle(const double open, const double high, const double low, const double close);
    static bool IsNeutralCandle(const double open, const double high, const double low, const double close);
 
-   static int ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds);
+   static int ConvertToLocalTimeToServerTimeInSeconds(datetime time, datetime tz, int serverOffsetSeconds);
 
-   static int MinutesBetween(int startHour, int startMin, int endHour, int endMin);
+   static int TimeToSeconds(datetime date);
+
+   static int MinutesBetween(datetime start, datetime end);
 
    static int GetTimeframeMinutes(ENUM_TIMEFRAMES timeframe);
 };
@@ -50,21 +53,42 @@ CTimeHelpers::~CTimeHelpers()
 {
 }
 
-int CTimeHelpers::MinutesBetween(int startHour, int startMin, int endHour, int endMin)
+int CTimeHelpers::MinutesBetween(datetime start, datetime end)
 {
+   MqlDateTime dStart, dEnd;
+   TimeToStruct(start, dStart);
+   TimeToStruct(end, dEnd);
+
    int duration = 0;
 
    // handle when time crosses midnight, i.e. 2300 - 0700
-   if (endHour < startHour)
+   if (dEnd.hour < dStart.hour)
    {
-      duration = (((24 - startHour) + endHour) * 60 - startMin + endMin);
+      duration = (((24 - dStart.hour) + dEnd.hour) * 60 - dStart.min + dEnd.min);
    }
    else
    {
-      duration = ((endHour - startHour) * 60 - startMin + endMin);
+      duration = ((dEnd.hour - dStart.hour) * 60 - dStart.min + dEnd.min);
    }
 
    return duration;
+}
+
+int CTimeHelpers::TimeToSeconds(datetime date)
+{
+   MqlDateTime d;
+   TimeToStruct(date, d);
+
+   return ((d.hour * 60) + d.min) * 60;
+}
+
+int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(datetime time, datetime tz, int serverOffsetSeconds)
+{
+   MqlDateTime dTime, dTz;
+   TimeToStruct(time, dTime);
+   TimeToStruct(tz, dTz);
+   
+   return ConvertToLocalTimeToServerTimeInSeconds(dTime.hour, dTime.min, dTz.hour, dTz.min, serverOffsetSeconds);
 }
 
 int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds)
