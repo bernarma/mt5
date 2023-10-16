@@ -145,9 +145,9 @@ void CBooks::ProcessTime(int current, int total, const datetime &time[], const d
    
    bool inSession = (!_filterInSession) || _sessions.IsInSession(time[current]);
    
-   if (!CTimeHelpers::IsNeutralCandle(open[current-1], high[current-1], low[current-1], close[current-1]))
+   if (!CTimeHelpers::IsNeutralCandle(open[current-1], close[current-1]))
    {
-      _prevCandleArr.Add(CTimeHelpers::CandleDir(open[current-1], high[current-1], low[current-1], close[current-1]));
+      _prevCandleArr.Add(CTimeHelpers::CandleDir(open[current-1], close[current-1]));
       if (_prevCandleArr.Count() > _maxBearCDLookback)
          _prevCandleArr.RemoveAt(0); // RemoveAt(0) = shift
    }
@@ -162,7 +162,7 @@ void CBooks::ProcessTime(int current, int total, const datetime &time[], const d
       isBearLv =
          CTimeHelpers::IsBullDir(dir1) &&
          CTimeHelpers::IsBearDir(dir2) &&
-         CTimeHelpers::IsBearCandle(open[current], high[current], low[current], close[current]);
+         CTimeHelpers::IsBearCandle(open[current], close[current]);
    }
 
    if (isBearLv)
@@ -173,7 +173,7 @@ void CBooks::ProcessTime(int current, int total, const datetime &time[], const d
       AddBearBook(time[current-1], close[current-1]);
    }
 
-   if (CTimeHelpers::IsBearCandle(open[current], high[current], low[current], close[current]))
+   if (CTimeHelpers::IsBearCandle(open[current], close[current]))
    {
        _lastBearCdOpen = open[current];
        _lastBearCdDate = time[current];
@@ -181,7 +181,7 @@ void CBooks::ProcessTime(int current, int total, const datetime &time[], const d
    }
        
    bool isBullLv =
-      CTimeHelpers::IsBullCandle(open[current], high[current], low[current], close[current]) &&
+      CTimeHelpers::IsBullCandle(open[current], close[current]) &&
       close[current] > _lastBearCdOpen &&
       !_isLastBearCdBroken;
 

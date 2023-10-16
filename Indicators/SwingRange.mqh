@@ -14,10 +14,17 @@
 //+-----------------------------------------------------------------------------+
 
 enum SWING_TYPE {
-   SWING_UNCONFIRMED = 0, // Unconfirmed
-   SWING_NFT = 0,         // No Follow-Through
-   SWING_FT = 1,          // Follow-Through
-   SWING_SFT = 2          // Strong Follow-Through
+   SWING_BEAR_SFT = -4,         // Bear Strong Follow-Through
+   SWING_BEAR_FT = -3,          // Bear Follow-Through
+   SWING_BEAR_NFT = -2,         // Bear No Follow-Through
+   SWING_BEAR_UNCONFIRMED = -1, // Bear Unconfirmed
+
+   SWING_NONE = 0,             // None
+
+   SWING_BULL_UNCONFIRMED = 1, // Bull Unconfirmed
+   SWING_BULL_NFT = 2,         // Bull No Follow-Through
+   SWING_BULL_FT = 3,          // Bull Follow-Through
+   SWING_BULL_SFT = 4,         // Bull Strong Follow-Through
 };
 
 class CSwingRange
