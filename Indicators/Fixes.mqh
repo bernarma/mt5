@@ -63,7 +63,8 @@ CFixes::~CFixes()
 
 void CFixes::CreateFix(string name, datetime timeUTC, SESSION_TZ session, color clr, ENUM_LINE_STYLE style)
 {
-   int fixInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(timeUTC, 0, _serverOffset);
+   bool next;
+   int fixInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(timeUTC, 0, _serverOffset, next);
 
    CFix *fix = new CFix(_prefix, name, fixInSeconds, _maxFixes, _drawingOffset, session, clr, style);
    _fixes.Add(fix);

@@ -33,11 +33,11 @@ public:
    
    void CreateSession(
       string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
-      int durationInMinutes, datetime sessionTz, SESSION_TZ session, int startDay, int endDay);
+      int durationInMinutes, ENUM_UTC_TZ sessionTz, SESSION_TZ session, int startDay, int endDay);
 
    void CreateSession(
       string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
-      datetime end, datetime sessionTz, SESSION_TZ session, int startDay, int endDay);
+      datetime end, ENUM_UTC_TZ sessionTz, SESSION_TZ session, int startDay, int endDay);
       
    bool IsInSession(datetime time);
    
@@ -66,10 +66,15 @@ CSessions::~CSessions()
 
 void CSessions::CreateSession(
    string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
-   int durationInMinutes, datetime sessionTz, SESSION_TZ session, int startDay, int endDay)
+   int durationInMinutes, ENUM_UTC_TZ sessionTz, SESSION_TZ session, int startDay, int endDay)
 {
    // Convert startHour to local
-   int sessionStartInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(start, sessionTz, _serverOffset);
+   bool next;
+   int sessionStartInSeconds = CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(start, sessionTz, _serverOffset, next);
+   if (next)
+   {
+      startDay++; endDay++;
+   }
 
    CSession *s = new CSession(prefix, name, clr, maxHistoricalSessions, isVisible, showNextSession, session,
                               startDay, endDay, sessionStartInSeconds, durationInMinutes * 60);
@@ -78,7 +83,7 @@ void CSessions::CreateSession(
 
 void CSessions::CreateSession(
    string prefix, string name, color clr, int maxHistoricalSessions, bool isVisible, bool showNextSession, datetime start,
-   datetime end, datetime sessionTz, SESSION_TZ session, int startDay, int endDay)
+   datetime end, ENUM_UTC_TZ sessionTz, SESSION_TZ session, int startDay, int endDay)
 {
    int duration = CTimeHelpers::MinutesBetween(start, end);
 

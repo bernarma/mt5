@@ -31,11 +31,11 @@ const string INDICATOR_SHORT_NAME = "MARKET_SESSIONS";
 
 //--- input parameters
 input bool InpDetectServerTimezone = false; // Detect the timezone of the Server Automatically
-input datetime InpServerTimeZone = D'1970.01.01 03:00'; // Server Timezone (used if auto detection is disabled)
+input ENUM_UTC_TZ InpServerTimeZone = TZ_UTC3; // Server Timezone (used if auto detection is disabled)
 
 input int  InpMaxHistoricalSessionsToShow = 50;        // Max Historical Sessions to Show
 
-input datetime InpSessionTimeZone = D'1970.01.01 00:00'; // Timezone (Hour)
+input ENUM_UTC_TZ InpSessionTimeZone = TZ_UTC; // Timezone used for defining Sessions
 
 input bool InpShowSession1 = true; // Show Session 1
 input bool InpShowNextSession1 = true; // Show Next Session 1
@@ -96,21 +96,25 @@ void Initialize(datetime dt)
 {
    g_Sessions = new CSessions((int)dt);
 
-   g_Sessions.CreateSession(
-      INDICATOR_SHORT_NAME, InpSession1Name, InpSession1Color, InpMaxHistoricalSessionsToShow, InpShowSession1, InpShowNextSession1,
-      InpSession1Start, InpSession1End, InpSessionTimeZone, InpSession1Type, InpSession1StartDay, InpSession1EndDay);
+   if (InpShowSession1 || InpShowNextSession1)
+      g_Sessions.CreateSession(
+         INDICATOR_SHORT_NAME, InpSession1Name, InpSession1Color, InpMaxHistoricalSessionsToShow, InpShowSession1, InpShowNextSession1,
+         InpSession1Start, InpSession1End, InpSessionTimeZone, InpSession1Type, InpSession1StartDay, InpSession1EndDay);
    
-   g_Sessions.CreateSession(
-      INDICATOR_SHORT_NAME, InpSession2Name, InpSession2Color, InpMaxHistoricalSessionsToShow, InpShowSession2, InpShowNextSession2,
-      InpSession2Start, InpSession2End, InpSessionTimeZone, InpSession2Type, InpSession2StartDay, InpSession2EndDay);
+   if (InpShowSession2 || InpShowNextSession2)
+      g_Sessions.CreateSession(
+         INDICATOR_SHORT_NAME, InpSession2Name, InpSession2Color, InpMaxHistoricalSessionsToShow, InpShowSession2, InpShowNextSession2,
+         InpSession2Start, InpSession2End, InpSessionTimeZone, InpSession2Type, InpSession2StartDay, InpSession2EndDay);
 
-   g_Sessions.CreateSession(
-      INDICATOR_SHORT_NAME, InpSession3Name, InpSession3Color, InpMaxHistoricalSessionsToShow, InpShowSession3, InpShowNextSession3,
-      InpSession3Start, InpSession3End, InpSessionTimeZone, InpSession3Type, InpSession3StartDay, InpSession3EndDay);
+   if (InpShowSession3 || InpShowNextSession3)
+      g_Sessions.CreateSession(
+         INDICATOR_SHORT_NAME, InpSession3Name, InpSession3Color, InpMaxHistoricalSessionsToShow, InpShowSession3, InpShowNextSession3,
+         InpSession3Start, InpSession3End, InpSessionTimeZone, InpSession3Type, InpSession3StartDay, InpSession3EndDay);
 
-   g_Sessions.CreateSession(
-      INDICATOR_SHORT_NAME, InpSession4Name, InpSession4Color, InpMaxHistoricalSessionsToShow, InpShowSession4, InpShowNextSession4,
-      InpSession4Start, InpSession4End, InpSessionTimeZone, InpSession4Type, InpSession4StartDay, InpSession4EndDay);
+   if (InpShowSession4 || InpShowNextSession4)
+      g_Sessions.CreateSession(
+         INDICATOR_SHORT_NAME, InpSession4Name, InpSession4Color, InpMaxHistoricalSessionsToShow, InpShowSession4, InpShowNextSession4,
+         InpSession4Start, InpSession4End, InpSessionTimeZone, InpSession4Type, InpSession4StartDay, InpSession4EndDay);
 
    PrintFormat("Initialised (Market Sessions)");
    
@@ -139,7 +143,7 @@ int OnInit()
    }
    else
    {
-      Initialize(CTimeHelpers::TimeToSeconds(InpServerTimeZone));
+      Initialize((int)InpServerTimeZone*60*60);
    }
    
    EventSetTimer(5);

@@ -53,11 +53,11 @@ input color InpBookBearishColor = clrLightCoral; // Book Level Color (Bearish)
 input bool InpOnlyInSession = true; // Filter with Market Sessions
 
 input bool InpDetectServerTimezone = false; // Detect the timezone of the Server Automatically
-input datetime InpServerTimeZone = D'1970.01.01 03:00'; // Server Timezone (used if auto detection is disabled)
+input ENUM_UTC_TZ InpServerTimeZone = TZ_UTC3; // Server Timezone (used if auto detection is disabled)
 
 input int InpMaxHistoricalSessionsToShow     = 10;        // Max Historical Sessions to Show
 
-input datetime InpSessionTimeZone = 0; // Timezone
+input ENUM_UTC_TZ InpSessionTimeZone = TZ_UTC; // Timezone
 
 input bool InpShowSession1 = false; // Show Session 1
 input bool InpShowNextSession1 = false; // Show Next Session 1
@@ -210,7 +210,7 @@ int OnInit()
    }
    else
    {
-      Initialize(CTimeHelpers::TimeToSeconds(InpServerTimeZone));
+      Initialize(InpServerTimeZone*60*60);
    }
    
    EventSetTimer(5);

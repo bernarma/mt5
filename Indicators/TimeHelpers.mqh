@@ -19,10 +19,40 @@ enum DIR {
    DIR_BEAR = -1
 };
 
+enum ENUM_UTC_TZ {
+   TZ_UTCM12 = -12, // UTC-12
+   TZ_UTCM11 = -11, // UTC-11
+   TZ_UTCM10 = -10, // UTC-10
+   TZ_UTCM9 = -9, // UTC-9
+   TZ_UTCM8 = -8, // UTC-8
+   TZ_UTCM7 = -7, // UTC-7
+   TZ_UTCM6 = -6, // UTC-6
+   TZ_UTCM5 = -5, // UTC-5
+   TZ_UTCM4 = -4, // UTC-4
+   TZ_UTCM3 = -3, // UTC-3
+   TZ_UTCM2 = -2, // UTC-2
+   TZ_UTCM1 = -1, // UTC-1
+   TZ_UTC = 0, // UTC
+   TZ_UTC1 = 1, // UTC+1
+   TZ_UTC2 = 2, // UTC+2
+   TZ_UTC3 = 3, // UTC+3
+   TZ_UTC4 = 4, // UTC+4
+   TZ_UTC5 = 5, // UTC+5
+   TZ_UTC6 = 6, // UTC+6
+   TZ_UTC7 = 7, // UTC+7
+   TZ_UTC8 = 8, // UTC+8
+   TZ_UTC9 = 9, // UTC+9
+   TZ_UTC10 = 10, // UTC+10
+   TZ_UTC11 = 11, // UTC+11
+   TZ_UTC12 = 12, // UTC+12
+   TZ_UTC13 = 13, // UTC+13
+   TZ_UTC14 = 14 // UTC+14
+};
+
 class CTimeHelpers
 {
 private:
-   static int ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds);
+   static int ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, ENUM_UTC_TZ tz, int serverOffsetSeconds, bool &next);
 
 public:
    CTimeHelpers();
@@ -36,7 +66,7 @@ public:
    static bool IsBearCandle(const double open, const double close);
    static bool IsNeutralCandle(const double open, const double close);
 
-   static int ConvertToLocalTimeToServerTimeInSeconds(datetime time, datetime tz, int serverOffsetSeconds);
+   static int ConvertToLocalTimeToServerTimeInSeconds(datetime time, ENUM_UTC_TZ tz, int serverOffsetSeconds, bool &next);
 
    static int TimeToSeconds(datetime date);
 
@@ -82,21 +112,26 @@ int CTimeHelpers::TimeToSeconds(datetime date)
    return ((d.hour * 60) + d.min) * 60;
 }
 
-int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(datetime time, datetime tz, int serverOffsetSeconds)
+int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(datetime time, ENUM_UTC_TZ tz, int serverOffsetSeconds, bool &next)
 {
-   MqlDateTime dTime, dTz;
+   MqlDateTime dTime;
    TimeToStruct(time, dTime);
-   TimeToStruct(tz, dTz);
    
-   return ConvertToLocalTimeToServerTimeInSeconds(dTime.hour, dTime.min, dTz.hour, dTz.min, serverOffsetSeconds);
+   return ConvertToLocalTimeToServerTimeInSeconds(dTime.hour, dTime.min, tz, serverOffsetSeconds, next);
 }
 
-int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, int tzHour, int tzMin, int serverOffsetSeconds)
+int CTimeHelpers::ConvertToLocalTimeToServerTimeInSeconds(int hour, int min, ENUM_UTC_TZ tz, int serverOffsetSeconds, bool &next)
 {
-   int localHour = hour - tzHour;
-   int localMin = min - tzMin;
+   next = false;
+   int i = (((hour - tz) * 60) + min) * 60 + serverOffsetSeconds;
 
-   return ((localHour * 60) + localMin) * 60 + serverOffsetSeconds;
+   if (i > 86400)
+   {
+      i -= 86400;
+      next = true;
+   }
+
+   return i;
 }
 
 DIR CTimeHelpers::CandleDir(const double open, const double close)
