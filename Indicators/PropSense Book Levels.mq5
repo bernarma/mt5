@@ -99,6 +99,8 @@ input color InpSession4Color = clrLimeGreen; // Session 4 Color
 input datetime InpSession4Start = D'1970.01.01 12:00'; // Session 4 Start
 input datetime InpSession4End = D'1970.01.01 21:00'; // Session 4 End
 
+input int InpFixesToShow = 2; // The number of fixes to show (including current)
+
 input bool InpShowTokyoFix = true; // Show the Tokyo Fix
 input color InpTokyoFixColor = clrDarkGoldenrod; // Tokyo Fix Color
 input ENUM_LINE_STYLE InpTokyoFixStyle = STYLE_DOT; // Tokyo Fix Style
@@ -137,7 +139,7 @@ void Initialize(datetime dt)
    int secondsOffset = InpOffset * CTimeHelpers::GetTimeframeMinutes(Period()) * 60;
 
    g_Sessions = new CSessions((int)dt);
-   g_Fixes = new CFixes(INDICATOR_SHORT_NAME, 2, secondsOffset, (int)dt);
+   g_Fixes = new CFixes(INDICATOR_SHORT_NAME, InpFixesToShow, secondsOffset, (int)dt);
    g_Books = new CBooks(INDICATOR_SHORT_NAME, secondsOffset, InpMaxLevelsToShow, InpOnlyInSession, g_Sessions, InpLookbackBars, InpBookBearishColor, InpBookBullishColor);
    
    if (InpShowTokyoFix)
