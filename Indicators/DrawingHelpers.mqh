@@ -166,6 +166,9 @@ bool CDrawingHelpers::TrendCreate(const long            chart_ID=0,        // ch
       return(false);
    }
 
+   //uchar alfa=0x55;  // 0x55 means 55/255=21.6 % of transparency
+   //ColorToARGB(clr,alfa);
+
    ObjectSetInteger(chart_ID,name,OBJPROP_COLOR,clr);
    ObjectSetInteger(chart_ID,name,OBJPROP_STYLE,style);
    ObjectSetInteger(chart_ID,name,OBJPROP_WIDTH,width);
